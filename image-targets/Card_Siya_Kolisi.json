@@ -1,0 +1,23 @@
+{
+  "type": "PLANAR",
+  "properties": {
+    "top": 25,
+    "left": 0,
+    "width": 784,
+    "height": 1045,
+    "isRotated": false,
+    "originalWidth": 784,
+    "originalHeight": 1095
+  },
+  "imagePath": "image-targets/Card_Siya_Kolisi_luminance.png",
+  "metadata": null,
+  "name": "Card_Siya_Kolisi",
+  "resources": {
+    "originalImage": "Card_Siya_Kolisi_original.png",
+    "croppedImage": "Card_Siya_Kolisi_cropped.png",
+    "thumbnailImage": "Card_Siya_Kolisi_thumbnail.png",
+    "luminanceImage": "Card_Siya_Kolisi_luminance.png"
+  },
+  "created": 1782722721508,
+  "updated": 1782734873822
+}

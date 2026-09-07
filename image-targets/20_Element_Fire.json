@@ -1,0 +1,25 @@
+{
+  "imagePath": "image-targets/Siya_Gold_Card_luminance.png",
+  "resources": {
+    "originalImage": "Siya_Gold_Card_original.png",
+    "croppedImage": "Siya_Gold_Card_cropped.png",
+    "thumbnailImage": "Siya_Gold_Card_thumbnail.png",
+    "geometryImage": "Siya_Gold_Card_geometry.png",
+    "luminanceImage": "Siya_Gold_Card_luminance.png"
+  },
+  "name": "Siya_Gold_Card",
+  "type": "PLANAR",
+  "properties": {
+    "top": 108,
+    "left": 62,
+    "width": 625,
+    "height": 833,
+    "isRotated": false,
+    "originalWidth": 750,
+    "originalHeight": 1050
+  },
+  "loadAutomatically": true,
+  "created": 1744147968791,
+  "updated": 1782300691068,
+  "metadata": null
+}
