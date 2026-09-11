@@ -37,10 +37,10 @@
         -0.11962780389665328
       ],
       "rotation": [
+        0.35836794954530027,
         0,
         0,
-        0,
-        1
+        0.9335804264972017
       ],
       "scale": [
         0.6,
@@ -54,7 +54,7 @@
           "asset": "assets/models/AIPlayerModel_inAnimation_baked_noTextures.glb"
         },
         "animationClip": "Animation",
-        "loop": true
+        "loop": false
       },
       "name": "arTest_Animated.glb",
       "order": 1.53520406000254

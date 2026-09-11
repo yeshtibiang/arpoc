@@ -50,11 +50,32 @@ ecs.registerComponent({
       "surname",
     ];
 
+    // The textured source glb marks these two materials `alphaMode: "BLEND"`
+    // (and background_texture as doubleSided) so their shared texture sheets
+    // can cut out non-rectangular shapes via alpha. The no-textures glb we
+    // actually instantiate at runtime dropped those flags along with the
+    // baked-in images, so we restore them here alongside the texture —
+    // otherwise the cutout regions render as solid (often black) instead of
+    // transparent.
     const nodeTexturesFor = (player: {
       texture: string;
-    }): Array<{ nodeNames: string[]; texturePath: string }> => [
-      { nodeNames: BACKGROUND_SHEET_NODES, texturePath: BACKGROUND_TEXTURE },
-      { nodeNames: PLAYER_SHEET_NODES, texturePath: player.texture },
+    }): Array<{
+      nodeNames: string[];
+      texturePath: string;
+      transparent: boolean;
+      doubleSided?: boolean;
+    }> => [
+      {
+        nodeNames: BACKGROUND_SHEET_NODES,
+        texturePath: BACKGROUND_TEXTURE,
+        transparent: true,
+        doubleSided: true,
+      },
+      {
+        nodeNames: PLAYER_SHEET_NODES,
+        texturePath: player.texture,
+        transparent: true,
+      },
     ];
 
     // Read the selected card from URL
@@ -209,7 +230,12 @@ ecs.registerComponent({
 
     const applyTextures = (
       modelEid: ecs.Eid,
-      nodeTextureGroups: Array<{ nodeNames: string[]; texturePath: string }>,
+      nodeTextureGroups: Array<{
+        nodeNames: string[];
+        texturePath: string;
+        transparent: boolean;
+        doubleSided?: boolean;
+      }>,
       onReady: (failed: boolean) => void,
     ) => {
       pollUntil(
@@ -228,99 +254,104 @@ ecs.registerComponent({
             if (remaining <= 0) onReady(anyFailed);
           };
 
-          nodeTextureGroups.forEach(({ nodeNames, texturePath }) => {
-            const applyToMatchingMeshes = (
-              img: HTMLImageElement,
-              attemptsLeft: number = MESH_MATCH_MAX_RETRIES,
-            ) => {
-              const tex = getOrCreateTexture(img, texturePath);
+          nodeTextureGroups.forEach(
+            ({ nodeNames, texturePath, transparent, doubleSided }) => {
+              const applyToMatchingMeshes = (
+                img: HTMLImageElement,
+                attemptsLeft: number = MESH_MATCH_MAX_RETRIES,
+              ) => {
+                const tex = getOrCreateTexture(img, texturePath);
+                const THREE = (window as any).THREE;
 
-              // Only touch meshes whose node name is in this group (e.g. the
-              // background sheet's nodes vs the player sheet's nodes) — leaves
-              // the other baked-in materials (frame, logo, gold card...) untouched
-              let matchedCount = 0;
-              modelObject.traverse((child: any) => {
-                if (!child.isMesh || !nodeNames.includes(child.name)) return;
-                matchedCount += 1;
-                const materials = Array.isArray(child.material)
-                  ? child.material
-                  : [child.material];
-                materials.forEach((mat: any) => {
-                  mat.map = tex;
-                  mat.needsUpdate = true;
+                // Only touch meshes whose node name is in this group (e.g. the
+                // background sheet's nodes vs the player sheet's nodes) — leaves
+                // the other baked-in materials (frame, logo, gold card...) untouched
+                let matchedCount = 0;
+                modelObject.traverse((child: any) => {
+                  if (!child.isMesh || !nodeNames.includes(child.name)) return;
+                  matchedCount += 1;
+                  const materials = Array.isArray(child.material)
+                    ? child.material
+                    : [child.material];
+                  materials.forEach((mat: any) => {
+                    mat.map = tex;
+                    if (transparent) mat.transparent = true;
+                    if (doubleSided) mat.side = THREE.DoubleSide;
+                    mat.needsUpdate = true;
+                  });
                 });
-              });
 
-              if (matchedCount === 0) {
-                // The model object exists but its mesh hierarchy may not be
-                // fully attached yet (glTF nodes can populate a moment after
-                // the root Object3D itself is registered) — retry a few
-                // times before concluding the node names genuinely don't
-                // match anything, so we don't silently "succeed" without
-                // ever touching a single material.
-                if (attemptsLeft > 0) {
-                  setTimeout(
-                    () => applyToMatchingMeshes(img, attemptsLeft - 1),
-                    MESH_MATCH_RETRY_DELAY_MS,
+                if (matchedCount === 0) {
+                  // The model object exists but its mesh hierarchy may not be
+                  // fully attached yet (glTF nodes can populate a moment after
+                  // the root Object3D itself is registered) — retry a few
+                  // times before concluding the node names genuinely don't
+                  // match anything, so we don't silently "succeed" without
+                  // ever touching a single material.
+                  if (attemptsLeft > 0) {
+                    setTimeout(
+                      () => applyToMatchingMeshes(img, attemptsLeft - 1),
+                      MESH_MATCH_RETRY_DELAY_MS,
+                    );
+                    return;
+                  }
+                  console.warn(
+                    "card-manager: no meshes matched node names",
+                    nodeNames,
+                    "for texture",
+                    texturePath,
+                    "— model hierarchy:",
+                    modelObject,
                   );
+                  oneDone(false);
                   return;
                 }
-                console.warn(
-                  "card-manager: no meshes matched node names",
-                  nodeNames,
-                  "for texture",
-                  texturePath,
-                  "— model hierarchy:",
-                  modelObject,
-                );
-                oneDone(false);
-                return;
-              }
 
-              oneDone(true);
-            };
+                oneDone(true);
+              };
 
-            const onFailure = () => oneDone(false);
+              const onFailure = () => oneDone(false);
 
-            const preloaded = preloadedImages[texturePath];
-            if (!preloaded) {
-              loadTextureWithRetry(
-                texturePath,
-                applyToMatchingMeshes,
-                onFailure,
-              );
-            } else if (preloaded.complete) {
-              // `complete` is true both on success and on a failed load —
-              // naturalWidth is what actually tells the two apart.
-              if (preloaded.naturalWidth > 0) {
-                applyToMatchingMeshes(preloaded);
-              } else {
+              const preloaded = preloadedImages[texturePath];
+              if (!preloaded) {
                 loadTextureWithRetry(
                   texturePath,
                   applyToMatchingMeshes,
                   onFailure,
                 );
-              }
-            } else {
-              // Still in flight — wait for it instead of firing a second,
-              // redundant fetch of the same resource.
-              preloaded.addEventListener(
-                "load",
-                () => applyToMatchingMeshes(preloaded),
-                { once: true },
-              );
-              preloaded.addEventListener(
-                "error",
-                () =>
+              } else if (preloaded.complete) {
+                // `complete` is true both on success and on a failed load —
+                // naturalWidth is what actually tells the two apart.
+                if (preloaded.naturalWidth > 0) {
+                  applyToMatchingMeshes(preloaded);
+                } else {
                   loadTextureWithRetry(
                     texturePath,
                     applyToMatchingMeshes,
                     onFailure,
-                  ),
-                { once: true },
-              );
-            }
-          });
+                  );
+                }
+              } else {
+                // Still in flight — wait for it instead of firing a second,
+                // redundant fetch of the same resource.
+                preloaded.addEventListener(
+                  "load",
+                  () => applyToMatchingMeshes(preloaded),
+                  { once: true },
+                );
+                preloaded.addEventListener(
+                  "error",
+                  () =>
+                    loadTextureWithRetry(
+                      texturePath,
+                      applyToMatchingMeshes,
+                      onFailure,
+                    ),
+                  { once: true },
+                );
+              }
+            },
+          );
         },
         `model object for entity ${modelEid}`,
       );
