@@ -1,4 +1,5 @@
 import * as ecs from "@8thwall/ecs";
+import { cards, effectiveCardId } from "./selected-card";
 
 ecs.registerComponent({
   name: "card-manager",
@@ -7,117 +8,10 @@ ecs.registerComponent({
   data: {},
 
   add: (world, component) => {
-    const TEXTURE_BY_CARD: Record<string, string> = {
-      "001": "AndreEsterhuizen_texture.png",
-      "002": "ApheleleFassi_texture.png",
-      "003": "BongiMbonambi_texture.png",
-      "004": "CananMoodie_texture.png",
-      "005": "CheslinKolbe_texture.png",
-      "006": "DamiandeAllende_texture.png",
-      "007": "DamianWillemse_texture.png",
-      "008": "SiyaKolisi_texture.png",
-      "009": "SiyaKolisi_texture.png",
-      "010": "SiyaKolisi_texture.png",
-      "011": "HandrePollard_texture.png",
-      "013": "SiyaKolisi_texture.png",
-      "014": "SiyaKolisi_texture.png",
-      "015": "SiyaKolisi_texture.png",
-      "016": "SiyaKolisi_texture.png",
-      "019": "SiyaKolisi_texture.png",
-      "020": "SiyaKolisi_texture.png",
-      "021": "SiyaKolisi_texture.png",
-      "022": "SiyaKolisi_texture.png",
-      "025": "SiyaKolisi_texture.png",
-      "026": "SiyaKolisi_texture.png",
-      "027": "SiyaKolisi_texture.png",
-      "028": "SiyaKolisi_texture.png",
-      "032": "SiyaKolisi_texture.png",
-      "033": "AsenathiNtlabakanye_texture.png",
-      "034": "SiyaKolisi_texture.png",
-      "035": "SiyaKolisi_texture.png",
-      "036": "CobusReinach_texture.png",
-      "037": "SiyaKolisi_texture.png",
-      "038": "Mornevanden Berg_texture.png",
-      "039": "SiyaKolisi_texture.png",
-      "040": "AphiweNgwevu_texture.png",
-      "041": "AsezaHele_texture.png",
-      "042": "AyandaMalinga_texture.png",
-      "043": "BabalwaLatsha_texture.png",
-      "044": "ByrhandreDolf_texture.png",
-      "045": "CathaJacobs_texture.png",
-      "046": "SiyaKolisi_texture.png",
-      "047": "SiyaKolisi_texture.png",
-      "048": "SiyaKolisi_texture.png",
-      "049": "SiyaKolisi_texture.png",
-      "050": "SiyaKolisi_texture.png",
-      "051": "SiyaKolisi_texture.png",
-      "052": "SiyaKolisi_texture.png",
-      "053": "SiyaKolisi_texture.png",
-      "054": "SiyaKolisi_texture.png",
-      "055": "SiyaKolisi_texture.png",
-      "056": "SiyaKolisi_texture.png",
-      "057": "SiyaKolisi_texture.png",
-      "058": "BakkiesBotha_texture.png",
-      "059": "BryanHabana_texture.png",
-      "060": "SiyaKolisi_texture.png",
-      "061": "SiyaKolisi_texture.png",
-      "062": "SiyaKolisi_texture.png",
-      "063": "SiyaKolisi_texture.png",
-      "064": "SiyaKolisi_texture.png",
-      "065": "SiyaKolisi_texture.png",
-      "066": "MorneSteyn_texture.png",
-      "067": "SiyaKolisi_texture.png",
-      "068": "SiyaKolisi_texture.png",
-      "069": "SiyaKolisi_texture.png",
-      "070": "SiyaKolisi_texture.png",
-      "071": "SiyaKolisi_texture.png",
-      "072": "SiyaKolisi_texture.png",
-      "901": "SiyaKolisi_texture.png",
-      "902": "SiyaKolisi_texture.png",
-      "903": "SiyaKolisi_texture.png",
-    };
-
-    const NAME_BY_TEXTURE: Record<string, string> = {
-      "AndreEsterhuizen_texture.png": "Andre Esterhuizen",
-      "ApheleleFassi_texture.png": "Aphelele Fassi",
-      "AphiweNgwevu_texture.png": "Aphiwe Ngwevu",
-      "AsenathiNtlabakanye_texture.png": "Asenathi Ntlabakanye",
-      "AsezaHele_texture.png": "Aseza Hele",
-      "AyandaMalinga_texture.png": "Ayanda Malinga",
-      "BabalwaLatsha_texture.png": "Babalwa Latsha",
-      "BakkiesBotha_texture.png": "Bakkies Botha",
-      "BongiMbonambi_texture.png": "Bongi Mbonambi",
-      "BryanHabana_texture.png": "Bryan Habana",
-      "ByrhandreDolf_texture.png": "Byrhandre Dolf",
-      "CananMoodie_texture.png": "Canan Moodie",
-      "CathaJacobs_texture.png": "Catha Jacobs",
-      "CheslinKolbe_texture.png": "Cheslin Kolbe",
-      "CobusReinach_texture.png": "Cobus Reinach",
-      "DamiandeAllende_texture.png": "Damian de Allende",
-      "DamianWillemse_texture.png": "Damian Willemse",
-      "HandrePollard_texture.png": "Handre Pollard",
-      "MorneSteyn_texture.png": "Morne Steyn",
-      "Mornevanden Berg_texture.png": "Morne van den Berg",
-      "SiyaKolisi_texture.png": "Siya Kolisi",
-    };
-
-    const VIDEO_BY_CARD: Record<string, string> = {
-      "028": "assets/videos/siya_kolisi.mp4",
-    };
-
     const PLAYER_DATA: Record<
       string,
       { playerName: string; texture: string; video?: string }
-    > = Object.fromEntries(
-      Object.entries(TEXTURE_BY_CARD).map(([cardId, basename]) => [
-        cardId,
-        {
-          playerName: NAME_BY_TEXTURE[basename] ?? basename,
-          texture: `assets/textures/${basename}`,
-          video: VIDEO_BY_CARD[cardId],
-        },
-      ]),
-    );
+    > = cards;
 
     // Applied to the 'bgTexture' material on every card, regardless of player
     const BACKGROUND_TEXTURE = "assets/textures/background_textureSheet.png";
@@ -174,10 +68,6 @@ ecs.registerComponent({
       },
     ];
 
-    // Read the selected card from URL
-    const urlParams = new URLSearchParams(window.location.search);
-    const selectedCard = urlParams.get("card");
-
     // Preload images/videos, keyed by asset path so the shared background
     // texture is only ever fetched once regardless of which card is selected
     const preloadedImages: Record<string, HTMLImageElement> = {};
@@ -194,9 +84,9 @@ ecs.registerComponent({
     // Background is used on every card, so it's always worth preloading
     preloadImage(BACKGROUND_TEXTURE);
 
-    if (selectedCard && PLAYER_DATA[selectedCard]) {
-      const player = PLAYER_DATA[selectedCard];
-
+    // effectiveCardId (from selected-card.js) is always a key of PLAYER_DATA
+    const player = PLAYER_DATA[effectiveCardId];
+    if (player) {
       preloadImage(player.texture);
 
       if (player.video) {
@@ -207,7 +97,7 @@ ecs.registerComponent({
         vid.muted = true;
         vid.playsInline = true;
         vid.load();
-        preloadedVideos[selectedCard] = vid;
+        preloadedVideos[effectiveCardId] = vid;
       }
 
       console.log("Preloading assets for:", player.playerName);
@@ -657,8 +547,11 @@ ecs.registerComponent({
         const player = PLAYER_DATA[name];
         if (!player) return;
 
-        // If a specific card was selected, only respond to that card
-        if (selectedCard && name !== selectedCard) return;
+        // Only the effective card's target is ever registered with the
+        // tracker (see src/app.js), so this should never actually filter
+        // anything out in practice — kept as a defensive guard against a
+        // future regression where multiple targets get configured again.
+        if (name !== effectiveCardId) return;
 
         showCard(name, player, e);
       },

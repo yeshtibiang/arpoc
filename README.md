@@ -14,7 +14,9 @@ This project demonstrates how to use Image Targets to anchor virtual content to 
 
 ## Card Image Targets
 
-Each card is identified by a short numeric code (`"001"`, `"002"`, ...) instead of a descriptive name. This code must match **exactly** across four places: the Image Target's filename, its `name` field, `src/app.js`, and `src/common/card-manager.ts`. If the JSON's filename doesn't match its `name` field, 8th Wall Studio will silently reassign the `name` the next time it syncs the project, breaking the lookup in `card-manager.ts`.
+Each card is identified by a short numeric code (`"001"`, `"002"`, ...) instead of a descriptive name. This code must match **exactly** across two places: the Image Target's filename/`name` field, and its entry in `src/common/cards.json`. If the JSON's filename doesn't match its `name` field, 8th Wall Studio will silently reassign the `name` the next time it syncs the project, breaking the lookup.
+
+At load time, the app reads `?card=` from the URL, looks it up in `src/common/cards.json`, and only fetches/loads that one card's image target, texture, and (if present) video — not the other cards'. If `?card=` is absent or doesn't match any entry, it falls back to the manifest's first card.
 
 ### Adding a new card
 
@@ -26,24 +28,17 @@ Each card is identified by a short numeric code (`"001"`, `"002"`, ...) instead 
    - `image-targets/003_thumbnail.png`
    - `image-targets/003_luminance.png`
 3. In `003.json`, set `"name": "003"` and update `imagePath` / `resources` to point at the renamed files above.
-4. Register the target in `src/app.js`:
-   ```js
-   const CARD_TARGETS = {
-     '001': require('../image-targets/001.json'),
-     '002': require('../image-targets/002.json'),
-     '003': require('../image-targets/003.json'),
+4. Add the player's entry to `src/common/cards.json`, keyed by the same code:
+   ```json
+   "003": {
+     "playerName": "Player Name",
+     "texture": "assets/textures/PlayerName_texture.png",
+     "video": "assets/videos/player_name.mp4"
    }
    ```
-5. Add the player's data to `PLAYER_DATA` in `src/common/card-manager.ts`, keyed by the same code:
-   ```ts
-   "003": {
-     playerName: "Player Name",
-     texture: "assets/textures/PlayerName_texture.png",
-     video: "assets/videos/player_name.mp4",
-   },
-   ```
-6. Add the player's texture (`src/assets/textures/`) and video (`src/assets/videos/`). The texture must follow the same UV layout as the existing player texture sheets, since it's mapped onto fixed mesh node names shared by every card's 3D model.
-7. The card is now reachable at `?card=003`.
+   (`video` is optional — omit it if the card has no video.)
+5. Add the player's texture (`src/assets/textures/`) and video (`src/assets/videos/`). The texture must follow the same UV layout as the existing player texture sheets, since it's mapped onto fixed mesh node names shared by every card's 3D model.
+6. The card is now reachable at `?card=003`.
 
 ## Deployment
 

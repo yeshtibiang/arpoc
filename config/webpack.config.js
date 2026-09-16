@@ -8,6 +8,12 @@ const createDev8Plugin = require('./dev8-plugin')
 const rootPath = process.cwd()
 const distPath = path.join(rootPath, 'dist')
 const srcPath = path.join(rootPath, 'src')
+const imageTargetsPath = path.join(rootPath, 'image-targets')
+
+// copy-webpack-plugin resolves a directory `from` into an absolute glob, so
+// `ignore` patterns must also be absolute or they silently match nothing.
+const toPosix = (p) => p.split(path.sep).join('/')
+const absoluteIgnore = (suffix) => toPosix(path.join(imageTargetsPath, '**', suffix))
 
 const makeTsLoader = () => ({
   test: /\.ts$/,
@@ -27,6 +33,7 @@ const config = {
     filename: 'bundle.js',
     path: distPath,
     publicPath: '/',
+    clean: true,
   },
   plugins: [
     new HtmlWebpackPlugin({
@@ -47,9 +54,17 @@ const config = {
           noErrorOnMissing: true,
         },
         {
-          from: path.join(rootPath, 'image-targets'),
+          from: imageTargetsPath,
           to: path.join(distPath, 'image-targets'),
           noErrorOnMissing: true,
+          globOptions: {
+            ignore: [
+              absoluteIgnore('*_original.png'),
+              absoluteIgnore('*_cropped.png'),
+              absoluteIgnore('*_thumbnail.png'),
+              absoluteIgnore('*_geometry.png'),
+            ],
+          },
         },
       ],
     }),
