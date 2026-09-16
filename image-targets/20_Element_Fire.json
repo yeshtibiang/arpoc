@@ -1,13 +1,13 @@
 {
-  "imagePath": "image-targets/Siya_Gold_Card_luminance.png",
+  "imagePath": "image-targets/20_Element_Fire_luminance.png",
   "resources": {
-    "originalImage": "Siya_Gold_Card_original.png",
-    "croppedImage": "Siya_Gold_Card_cropped.png",
-    "thumbnailImage": "Siya_Gold_Card_thumbnail.png",
-    "geometryImage": "Siya_Gold_Card_geometry.png",
-    "luminanceImage": "Siya_Gold_Card_luminance.png"
+    "originalImage": "20_Element_Fire_original.png",
+    "croppedImage": "20_Element_Fire_cropped.png",
+    "thumbnailImage": "20_Element_Fire_thumbnail.png",
+    "geometryImage": "20_Element_Fire_geometry.png",
+    "luminanceImage": "20_Element_Fire_luminance.png"
   },
-  "name": "Siya_Gold_Card",
+  "name": "20_Element_Fire",
   "type": "PLANAR",
   "properties": {
     "top": 108,

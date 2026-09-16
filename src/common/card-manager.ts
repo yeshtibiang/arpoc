@@ -7,21 +7,117 @@ ecs.registerComponent({
   data: {},
 
   add: (world, component) => {
+    const TEXTURE_BY_CARD: Record<string, string> = {
+      "001": "AndreEsterhuizen_texture.png",
+      "002": "ApheleleFassi_texture.png",
+      "003": "BongiMbonambi_texture.png",
+      "004": "CananMoodie_texture.png",
+      "005": "CheslinKolbe_texture.png",
+      "006": "DamiandeAllende_texture.png",
+      "007": "DamianWillemse_texture.png",
+      "008": "SiyaKolisi_texture.png",
+      "009": "SiyaKolisi_texture.png",
+      "010": "SiyaKolisi_texture.png",
+      "011": "HandrePollard_texture.png",
+      "013": "SiyaKolisi_texture.png",
+      "014": "SiyaKolisi_texture.png",
+      "015": "SiyaKolisi_texture.png",
+      "016": "SiyaKolisi_texture.png",
+      "019": "SiyaKolisi_texture.png",
+      "020": "SiyaKolisi_texture.png",
+      "021": "SiyaKolisi_texture.png",
+      "022": "SiyaKolisi_texture.png",
+      "025": "SiyaKolisi_texture.png",
+      "026": "SiyaKolisi_texture.png",
+      "027": "SiyaKolisi_texture.png",
+      "028": "SiyaKolisi_texture.png",
+      "032": "SiyaKolisi_texture.png",
+      "033": "AsenathiNtlabakanye_texture.png",
+      "034": "SiyaKolisi_texture.png",
+      "035": "SiyaKolisi_texture.png",
+      "036": "CobusReinach_texture.png",
+      "037": "SiyaKolisi_texture.png",
+      "038": "Mornevanden Berg_texture.png",
+      "039": "SiyaKolisi_texture.png",
+      "040": "AphiweNgwevu_texture.png",
+      "041": "AsezaHele_texture.png",
+      "042": "AyandaMalinga_texture.png",
+      "043": "BabalwaLatsha_texture.png",
+      "044": "ByrhandreDolf_texture.png",
+      "045": "CathaJacobs_texture.png",
+      "046": "SiyaKolisi_texture.png",
+      "047": "SiyaKolisi_texture.png",
+      "048": "SiyaKolisi_texture.png",
+      "049": "SiyaKolisi_texture.png",
+      "050": "SiyaKolisi_texture.png",
+      "051": "SiyaKolisi_texture.png",
+      "052": "SiyaKolisi_texture.png",
+      "053": "SiyaKolisi_texture.png",
+      "054": "SiyaKolisi_texture.png",
+      "055": "SiyaKolisi_texture.png",
+      "056": "SiyaKolisi_texture.png",
+      "057": "SiyaKolisi_texture.png",
+      "058": "BakkiesBotha_texture.png",
+      "059": "BryanHabana_texture.png",
+      "060": "SiyaKolisi_texture.png",
+      "061": "SiyaKolisi_texture.png",
+      "062": "SiyaKolisi_texture.png",
+      "063": "SiyaKolisi_texture.png",
+      "064": "SiyaKolisi_texture.png",
+      "065": "SiyaKolisi_texture.png",
+      "066": "MorneSteyn_texture.png",
+      "067": "SiyaKolisi_texture.png",
+      "068": "SiyaKolisi_texture.png",
+      "069": "SiyaKolisi_texture.png",
+      "070": "SiyaKolisi_texture.png",
+      "071": "SiyaKolisi_texture.png",
+      "072": "SiyaKolisi_texture.png",
+      "901": "SiyaKolisi_texture.png",
+      "902": "SiyaKolisi_texture.png",
+      "903": "SiyaKolisi_texture.png",
+    };
+
+    const NAME_BY_TEXTURE: Record<string, string> = {
+      "AndreEsterhuizen_texture.png": "Andre Esterhuizen",
+      "ApheleleFassi_texture.png": "Aphelele Fassi",
+      "AphiweNgwevu_texture.png": "Aphiwe Ngwevu",
+      "AsenathiNtlabakanye_texture.png": "Asenathi Ntlabakanye",
+      "AsezaHele_texture.png": "Aseza Hele",
+      "AyandaMalinga_texture.png": "Ayanda Malinga",
+      "BabalwaLatsha_texture.png": "Babalwa Latsha",
+      "BakkiesBotha_texture.png": "Bakkies Botha",
+      "BongiMbonambi_texture.png": "Bongi Mbonambi",
+      "BryanHabana_texture.png": "Bryan Habana",
+      "ByrhandreDolf_texture.png": "Byrhandre Dolf",
+      "CananMoodie_texture.png": "Canan Moodie",
+      "CathaJacobs_texture.png": "Catha Jacobs",
+      "CheslinKolbe_texture.png": "Cheslin Kolbe",
+      "CobusReinach_texture.png": "Cobus Reinach",
+      "DamiandeAllende_texture.png": "Damian de Allende",
+      "DamianWillemse_texture.png": "Damian Willemse",
+      "HandrePollard_texture.png": "Handre Pollard",
+      "MorneSteyn_texture.png": "Morne Steyn",
+      "Mornevanden Berg_texture.png": "Morne van den Berg",
+      "SiyaKolisi_texture.png": "Siya Kolisi",
+    };
+
+    const VIDEO_BY_CARD: Record<string, string> = {
+      "028": "assets/videos/siya_kolisi.mp4",
+    };
+
     const PLAYER_DATA: Record<
       string,
-      { playerName: string; texture: string; video: string }
-    > = {
-      Card_Siya_Kolisi: {
-        playerName: "Siya Kolisi",
-        texture: "assets/textures/SiyaKolisi_texture.png",
-        video: "assets/videos/siya_kolisi.mp4",
-      },
-      Card_Nandine_Roos: {
-        playerName: "Nandine Roos",
-        texture: "assets/textures/NadineRoos_texture.png",
-        video: "assets/videos/nadine_roos.mp4",
-      },
-    };
+      { playerName: string; texture: string; video?: string }
+    > = Object.fromEntries(
+      Object.entries(TEXTURE_BY_CARD).map(([cardId, basename]) => [
+        cardId,
+        {
+          playerName: NAME_BY_TEXTURE[basename] ?? basename,
+          texture: `assets/textures/${basename}`,
+          video: VIDEO_BY_CARD[cardId],
+        },
+      ]),
+    );
 
     // Applied to the 'bgTexture' material on every card, regardless of player
     const BACKGROUND_TEXTURE = "assets/textures/background_textureSheet.png";
@@ -103,15 +199,16 @@ ecs.registerComponent({
 
       preloadImage(player.texture);
 
-      // Preload video
-      const vid = document.createElement("video");
-      vid.src = player.video;
-      vid.preload = "auto";
-      vid.loop = true;
-      vid.muted = true;
-      vid.playsInline = true;
-      vid.load();
-      preloadedVideos[selectedCard] = vid;
+      if (player.video) {
+        const vid = document.createElement("video");
+        vid.src = player.video;
+        vid.preload = "auto";
+        vid.loop = true;
+        vid.muted = true;
+        vid.playsInline = true;
+        vid.load();
+        preloadedVideos[selectedCard] = vid;
+      }
 
       console.log("Preloading assets for:", player.playerName);
     }
