@@ -504,10 +504,14 @@ ecs.registerComponent({
       // scanned for the first time.
       setInstanceVisible(instanceEid, false);
 
-      setTimeout(() => {
-        positionInstance(instanceEid, e);
-        revealWhenTextured(name, instance, player);
-      }, 500);
+      // Position with the live found-event pose right away — the entity
+      // already exists synchronously above, so there's nothing to wait for
+      // here. Deferring this used to reuse a stale, closed-over `e` once the
+      // delay elapsed, overwriting whatever live REALITY_IMAGE_UPDATED pose
+      // had already been applied in the meantime and snapping the model away
+      // from the card the moment it was revealed.
+      positionInstance(instanceEid, e);
+      revealWhenTextured(name, instance, player);
     };
 
     const showCard = (name: string, player: any, e: any) => {
