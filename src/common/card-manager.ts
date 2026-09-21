@@ -122,7 +122,13 @@ ecs.registerComponent({
     // and preloadedImages below) and only then makes it visible, so what
     // you see when a card is scanned is always the freshly-applied player
     // texture, never the model's baked-in default look.
-    type CardInstance = { eid: ecs.Eid; modelEid: ecs.Eid | null };
+    type CardInstance = {
+      eid: ecs.Eid;
+      modelEid: ecs.Eid | null;
+      videoEid: ecs.Eid | null;
+      animationFinished: boolean;
+      videoAttached: boolean;
+    };
     const instances: Record<string, CardInstance> = {};
     const sharedTextures: Record<string, any> = {};
     let visibleCardName: string | null = null;
@@ -350,59 +356,85 @@ ecs.registerComponent({
       cardName: string,
       onReady: () => void,
     ) => {
-      setTimeout(() => {
-        const planeObject = world.three.entityToObject.get(planeEid);
-        if (!planeObject) {
-          onReady();
-          return;
-        }
+      const planeObject = world.three.entityToObject.get(planeEid);
+      if (!planeObject) {
+        onReady();
+        return;
+      }
 
-        const videoEl =
-          preloadedVideos[cardName] ||
-          (() => {
-            const v = document.createElement("video");
-            v.src = videoPath;
-            v.loop = true;
-            v.muted = true;
-            v.playsInline = true;
-            v.load();
-            return v;
-          })();
+      const videoEl =
+        preloadedVideos[cardName] ||
+        (() => {
+          const v = document.createElement("video");
+          v.src = videoPath;
+          v.loop = true;
+          v.muted = true;
+          v.playsInline = true;
+          v.load();
+          return v;
+        })();
 
-        const attachVideo = () => {
-          const THREE = (window as any).THREE;
-          const videoTexture = new THREE.VideoTexture(videoEl);
-          videoTexture.needsUpdate = true;
+      const attachVideo = () => {
+        const THREE = (window as any).THREE;
+        const videoTexture = new THREE.VideoTexture(videoEl);
+        videoTexture.needsUpdate = true;
 
-          planeObject.traverse((child: any) => {
-            if (child.isMesh) {
-              child.material.map = videoTexture;
-              child.material.needsUpdate = true;
-            }
-          });
-
-          onReady();
-        };
-
-        videoEl.play().catch((err) => {
-          console.warn("Video play error:", err);
-          onReady(); // don't hang on error
+        planeObject.traverse((child: any) => {
+          if (child.isMesh) {
+            child.material.map = videoTexture;
+            child.material.needsUpdate = true;
+          }
         });
 
-        if (videoEl.readyState >= 3) {
-          attachVideo();
-        } else {
-          videoEl.addEventListener("playing", attachVideo, { once: true });
-        }
-      }, 500);
+        onReady();
+      };
+
+      videoEl.play().catch((err: any) => {
+        console.warn("Video play error:", err);
+        onReady(); // don't hang on error
+      });
+
+      if (videoEl.readyState >= 3) {
+        attachVideo();
+      } else {
+        videoEl.addEventListener("playing", attachVideo, { once: true });
+      }
     };
 
-    const setInstanceVisible = (eid: ecs.Eid, visible: boolean) => {
+    // Gates when a card's video actually starts: only once the arTest
+    // animation has finished AND the card is still the one currently shown
+    // AND (for a card that's already played its video before, e.g. re-shown
+    // after a found/lost cycle) just re-reveals the plane instead of
+    // rebuilding the VideoTexture.
+    const tryPlayVideo = (
+      name: string,
+      instance: CardInstance,
+      player: { video?: string },
+    ) => {
+      if (!player.video) return;
+      if (!instance.animationFinished) return;
+      if (visibleCardName !== name) return;
+      if (!instance.videoEid) return;
+
+      if (instance.videoAttached) {
+        setEidVisible(instance.videoEid, true);
+        return;
+      }
+
+      instance.videoAttached = true;
+      const videoEid = instance.videoEid;
+      applyVideo(videoEid, player.video, name, () => {
+        setEidVisible(videoEid, true);
+      });
+    };
+
+    // Hides/shows a single entity (and its own Three.js subtree) without
+    // touching any of its ECS siblings/children beyond what Three.js's own
+    // traverse reaches — used to toggle the VideoReader plane independently
+    // of the rest of the PlayerCard instance.
+    const setEidVisible = (eid: ecs.Eid, visible: boolean) => {
       if (visible) {
         ecs.Hidden.remove(world, eid);
-        [...world.getChildren(eid)].forEach((childEid) =>
-          ecs.Hidden.remove(world, childEid),
-        );
       } else {
         ecs.Hidden.set(world, eid);
       }
@@ -413,6 +445,15 @@ ecs.registerComponent({
         obj.traverse((child: any) => {
           child.visible = visible;
         });
+      }
+    };
+
+    const setInstanceVisible = (eid: ecs.Eid, visible: boolean) => {
+      setEidVisible(eid, visible);
+      if (visible) {
+        [...world.getChildren(eid)].forEach((childEid) =>
+          setEidVisible(childEid, true),
+        );
       }
     };
 
@@ -464,6 +505,15 @@ ecs.registerComponent({
           // still (re)loading — don't reveal it after the fact.
           if (visibleCardName !== name) return;
           setInstanceVisible(instance.eid, true);
+
+          // setInstanceVisible above just force-revealed every child,
+          // including the video plane — re-hide it if its video hasn't
+          // actually started yet so it doesn't flash a blank white square
+          // while still waiting on the arTest animation to finish.
+          if (instance.videoEid && !instance.videoAttached) {
+            setEidVisible(instance.videoEid, false);
+          }
+          tryPlayVideo(name, instance, player);
         });
       };
 
@@ -478,12 +528,29 @@ ecs.registerComponent({
           return children.length > 0 ? children : null;
         },
         (children) => {
-          // The video plane is currently removed from the model
-          // (temporary) — support both layouts: [plane, model] when it's
-          // present, or just [model] when it's not, so this keeps working
-          // either way.
+          // PlayerCard's two children, in scene order: the arTest_Animated
+          // model, then the VideoReader plane. Support the model-only case
+          // too in case a variant of the prefab ever omits the video plane.
           const modelEid = children[0];
+          const videoEid = children.length > 1 ? children[1] : null;
           instance.modelEid = modelEid;
+          instance.videoEid = videoEid;
+
+          if (videoEid) {
+            // Stays hidden until its video is actually ready to play.
+            setEidVisible(videoEid, false);
+
+            world.events.addListener(
+              modelEid,
+              ecs.events.GLTF_ANIMATION_FINISHED,
+              (e: any) => {
+                if (e.data?.name !== "Animation") return;
+                instance.animationFinished = true;
+                tryPlayVideo(name, instance, player);
+              },
+            );
+          }
+
           applyAndReveal(modelEid);
         },
         `children of PlayerCard instance "${name}"`,
@@ -494,7 +561,13 @@ ecs.registerComponent({
       const instanceEid = world.createEntity("PlayerCard");
       if (!instanceEid) return;
 
-      const instance: CardInstance = { eid: instanceEid, modelEid: null };
+      const instance: CardInstance = {
+        eid: instanceEid,
+        modelEid: null,
+        videoEid: null,
+        animationFinished: false,
+        videoAttached: false,
+      };
       instances[name] = instance;
 
       // Hide immediately, before anything else — the entity is visible in

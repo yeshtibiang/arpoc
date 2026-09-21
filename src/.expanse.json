@@ -34,7 +34,7 @@
       "position": [
         0,
         -0.539,
-        -0.11962780389665328
+        -0.12
       ],
       "rotation": [
         0.35836794954530027,
@@ -54,7 +54,8 @@
           "asset": "assets/models/AIPlayerModel_inAnimation_baked_noTextures.glb"
         },
         "animationClip": "Animation",
-        "loop": false
+        "loop": false,
+        "paused": false
       },
       "name": "arTest_Animated.glb",
       "order": 1.53520406000254
@@ -1640,35 +1641,40 @@
       "order": 3.2646695142192947,
       "disabled": true
     },
-    "962f8c2e-ad89-4752-b7d5-3ca8d7afe5e4": {
-      "id": "962f8c2e-ad89-4752-b7d5-3ca8d7afe5e4",
+    "b6409855-f0ea-412e-825d-4757c1eacf35": {
+      "id": "b6409855-f0ea-412e-825d-4757c1eacf35",
       "position": [
         0,
-        0,
-        0
+        -0.33,
+        0.06
       ],
-      "name": "PlayerCard",
-      "instanceData": {
-        "instanceOf": "9375fb8e-d489-4bbf-b7b0-5b2ddc397853",
-        "deletions": {},
-        "children": {
-          "fc77ba9f-6d40-47d0-9a26-8686c154da9a": {
-            "id": "fc77ba9f-6d40-47d0-9a26-8686c154da9a",
-            "deletions": {},
-            "gltfModel": {
-              "src": {
-                "type": "asset",
-                "asset": "assets/models/AIPlayerModel_inAnimation_baked.glb"
-              },
-              "animationClip": "Animation",
-              "loop": false
-            }
-          }
-        }
+      "rotation": [
+        -0.16504760586067782,
+        0,
+        0,
+        0.9862856015372322
+      ],
+      "scale": [
+        0.6000000000000001,
+        0.6000000000000001,
+        0.6000000000000001
+      ],
+      "geometry": {
+        "type": "plane",
+        "width": 1,
+        "height": 1
       },
-      "parentId": "88453035-dc0f-486d-868a-8ff7c2fda864",
+      "material": {
+        "type": "basic",
+        "color": "#ffffff"
+      },
+      "parentId": "9375fb8e-d489-4bbf-b7b0-5b2ddc397853",
       "components": {},
-      "disabled": true
+      "name": "VideoReader",
+      "order": 2.8898381579307593,
+      "videoControls": {
+        "positional": false
+      }
     }
   },
   "spaces": {
