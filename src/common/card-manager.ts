@@ -506,6 +506,17 @@ ecs.registerComponent({
           if (visibleCardName !== name) return;
           setInstanceVisible(instance.eid, true);
 
+          // The clip starts paused (see .expanse.json) so it can't finish —
+          // or partially advance — in the background while the card was
+          // still hidden during texture loading. Starting it here instead
+          // means every reveal plays the same grow-in animation from frame
+          // zero and always lands on the correct final scale, regardless of
+          // how long texture loading took. Harmless no-op on a re-reveal of
+          // an already-unpaused/finished instance.
+          ecs.GltfModel.mutate(world, modelEid, (c) => {
+            c.paused = false;
+          });
+
           // setInstanceVisible above just force-revealed every child,
           // including the video plane — re-hide it if its video hasn't
           // actually started yet so it doesn't flash a blank white square

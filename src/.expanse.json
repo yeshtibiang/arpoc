@@ -55,7 +55,7 @@
         },
         "animationClip": "Animation",
         "loop": false,
-        "paused": false
+        "paused": true
       },
       "name": "arTest_Animated.glb",
       "order": 1.53520406000254
