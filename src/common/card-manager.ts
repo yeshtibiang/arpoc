@@ -26,6 +26,10 @@ ecs.registerComponent({
       "stripes",
       "sparksTop",
       "sparksBottom",
+      // player_without_video variant's background-sheet nodes
+      "sparksBackLeft",
+      "sparksBackRight",
+      "sparksFront",
     ];
     const PLAYER_SHEET_NODES = [
       "number",
@@ -38,7 +42,30 @@ ecs.registerComponent({
       "position",
       "firstName",
       "surname",
+      // player_without_video variant's static-image node (replaces the video plane)
+      "playerImage",
     ];
+
+    // Per-card model selection: cards with a video use the player_with_video
+    // pair, cards without one use player_without_video. Each pair has an
+    // in_animation model (shown by default) and a tap_animation model
+    // (swapped in when the displayed model is tapped, see handleModelTap).
+    const MODEL_PATHS = {
+      withVideo: {
+        initial: "assets/models/player_with_video/in_animation_with_video.glb",
+        tap: "assets/models/player_with_video/tap_animation_with_video.glb",
+      },
+      withoutVideo: {
+        // NOTE: filename intentionally has no underscore between "in" and
+        // "animation" — matches the actual asset filename, do not "fix" this.
+        initial:
+          "assets/models/player_without_video/inanimation_without_video.glb",
+        tap: "assets/models/player_without_video/tap_animation_without_video.glb",
+      },
+    } as const;
+
+    const modelPathsFor = (player: { video?: string }) =>
+      player.video ? MODEL_PATHS.withVideo : MODEL_PATHS.withoutVideo;
 
     // The textured source glb marks these two materials `alphaMode: "BLEND"`
     // (and background_texture as doubleSided) so their shared texture sheets
@@ -128,6 +155,10 @@ ecs.registerComponent({
       videoEid: ecs.Eid | null;
       animationFinished: boolean;
       videoAttached: boolean;
+      // Sticky for the instance's lifetime: once a tap has swapped in the
+      // tap_animation model, further taps (and found/lost flicker re-reveals)
+      // must not re-trigger or revert it. See handleModelTap.
+      tapped: boolean;
     };
     const instances: Record<string, CardInstance> = {};
     const sharedTextures: Record<string, any> = {};
@@ -562,7 +593,40 @@ ecs.registerComponent({
             );
           }
 
-          applyAndReveal(modelEid);
+          // Swap in this card's with/without-video in_animation model. This
+          // only runs once per instance (this whole pollUntil block is
+          // skipped on every subsequent re-reveal once instance.modelEid is
+          // set, see the early return above), so found/lost flicker never
+          // re-selects or reloads this model and can't clobber a post-tap
+          // state. Wait for GLTF_MODEL_LOADED rather than reusing
+          // applyTextures' own "does the object exist yet" poll — right
+          // after a url mutation that poll could transiently resolve to the
+          // stale prefab-default object instead of the one we just asked for.
+          const paths = modelPathsFor(player);
+          const initialUrl = ecs.assets.resolveAsset(paths.initial);
+          if (!initialUrl) {
+            console.warn(
+              "card-manager: could not resolve initial model asset",
+              paths.initial,
+            );
+            applyAndReveal(modelEid);
+            return;
+          }
+          world.events.addListener(
+            modelEid,
+            ecs.events.GLTF_MODEL_LOADED,
+            function onInitialLoad() {
+              world.events.removeListener(
+                modelEid,
+                ecs.events.GLTF_MODEL_LOADED,
+                onInitialLoad,
+              );
+              applyAndReveal(modelEid);
+            },
+          );
+          ecs.GltfModel.mutate(world, modelEid, (c) => {
+            c.url = initialUrl;
+          });
         },
         `children of PlayerCard instance "${name}"`,
       );
@@ -578,6 +642,7 @@ ecs.registerComponent({
         videoEid: null,
         animationFinished: false,
         videoAttached: false,
+        tapped: false,
       };
       instances[name] = instance;
 
@@ -625,6 +690,68 @@ ecs.registerComponent({
 
       const instance = instances[name];
       if (instance) setInstanceVisible(instance.eid, false);
+    };
+
+    // Swaps the currently-visible card's model from in_animation to
+    // tap_animation on tap. Sticky per instance (see CardInstance.tapped) —
+    // deliberately never reset on REALITY_IMAGE_LOST/FOUND flicker, since
+    // that would jarringly revert the model back to in_animation during
+    // ordinary tracking noise.
+    const handleModelTap = (e: any) => {
+      if (!visibleCardName) return;
+      const instance = instances[visibleCardName];
+      if (!instance || !instance.modelEid) return;
+      if (instance.tapped) return;
+
+      const modelEid = instance.modelEid;
+      // Require both start and end of the touch on the model, not just an
+      // overlap, so a drag/swipe gesture doesn't get mistaken for a tap.
+      if (e.data?.target !== modelEid || e.data?.endTarget !== modelEid) {
+        return;
+      }
+
+      const player = PLAYER_DATA[visibleCardName];
+      if (!player) return;
+
+      const tapUrl = ecs.assets.resolveAsset(modelPathsFor(player).tap);
+      if (!tapUrl) {
+        console.warn(
+          "card-manager: could not resolve tap model asset for",
+          visibleCardName,
+        );
+        return;
+      }
+
+      // Set before any async work so a rapid second tap is a no-op right away.
+      instance.tapped = true;
+
+      world.events.addListener(
+        modelEid,
+        ecs.events.GLTF_MODEL_LOADED,
+        function onTapLoad() {
+          world.events.removeListener(
+            modelEid,
+            ecs.events.GLTF_MODEL_LOADED,
+            onTapLoad,
+          );
+          // tap_animation is a separate glb with fresh materials — the
+          // in_animation textures don't carry over, so reapply them.
+          applyTextures(modelEid, nodeTexturesFor(player), (failed) => {
+            if (failed) {
+              console.warn(
+                `card-manager: failed to retexture tap model for "${visibleCardName}"`,
+              );
+            }
+            ecs.GltfModel.mutate(world, modelEid, (c) => {
+              c.loop = false;
+              c.paused = false;
+            });
+          });
+        },
+      );
+      ecs.GltfModel.mutate(world, modelEid, (c) => {
+        c.url = tapUrl;
+      });
     };
 
     world.events.addListener(
@@ -675,6 +802,14 @@ ecs.registerComponent({
       (e: any) => {
         const name = e.data?.name;
         hideCard(name);
+      },
+    );
+
+    world.events.addListener(
+      world.events.globalId,
+      ecs.input.SCREEN_TOUCH_END,
+      (e: any) => {
+        handleModelTap(e);
       },
     );
   },
