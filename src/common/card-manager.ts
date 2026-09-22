@@ -8,6 +8,46 @@ ecs.registerComponent({
   data: {},
 
   add: (world, component) => {
+    // TEMP: on-screen debug overlay for mobile testing, where there's no
+    // devtools/console access. Shows recent card-manager lifecycle events
+    // directly over the AR view so loading progress/failures are visible
+    // without a cable + remote debugger. Safe to remove once the feature is
+    // confirmed working live — every call also mirrors to console.log.
+    let debugOverlayEl: HTMLDivElement | null = null;
+    const debugLog = (message: string) => {
+      console.log("[card-manager]", message);
+      if (!debugOverlayEl) {
+        debugOverlayEl = document.createElement("div");
+        Object.assign(debugOverlayEl.style, {
+          position: "fixed",
+          top: "0",
+          left: "0",
+          right: "0",
+          maxHeight: "35vh",
+          overflowY: "auto",
+          zIndex: "999999",
+          background: "rgba(0,0,0,0.75)",
+          color: "#0f0",
+          fontFamily: "monospace",
+          fontSize: "11px",
+          lineHeight: "1.35",
+          padding: "6px 8px",
+          pointerEvents: "none",
+          whiteSpace: "pre-wrap",
+          wordBreak: "break-word",
+        });
+        document.body.appendChild(debugOverlayEl);
+      }
+      const time = new Date().toISOString().slice(11, 19);
+      const line = document.createElement("div");
+      line.textContent = `[${time}] ${message}`;
+      debugOverlayEl.appendChild(line);
+      while (debugOverlayEl.children.length > 20) {
+        debugOverlayEl.removeChild(debugOverlayEl.firstChild as ChildNode);
+      }
+      debugOverlayEl.scrollTop = debugOverlayEl.scrollHeight;
+    };
+
     const PLAYER_DATA: Record<
       string,
       { playerName: string; texture: string; video?: string }
@@ -64,8 +104,12 @@ ecs.registerComponent({
       },
     } as const;
 
-    const modelPathsFor = (player: { video?: string }) =>
-      player.video ? MODEL_PATHS.withVideo : MODEL_PATHS.withoutVideo;
+    // TODO: player_without_video models don't render correctly yet — always
+    // use the with-video pair for every card until that's fixed. Revert to
+    // `player.video ? MODEL_PATHS.withVideo : MODEL_PATHS.withoutVideo` once
+    // player_without_video is working.
+    const modelPathsFor = (_player: { video?: string }) =>
+      MODEL_PATHS.withVideo;
 
     // The textured source glb marks these two materials `alphaMode: "BLEND"`
     // (and background_texture as doubleSided) so their shared texture sheets
@@ -186,6 +230,50 @@ ecs.registerComponent({
 
     const MESH_MATCH_MAX_RETRIES = 10;
     const MESH_MATCH_RETRY_DELAY_MS = 200; // ~2s ceiling
+
+    const MODEL_LOAD_TIMEOUT_MS = 8000; // generous ceiling for a several-MB glb on a slow connection
+
+    // Waits for modelEid's gltfModel to finish (re)loading after a url
+    // mutation. Mirrors this file's other bounded waits (pollUntil, texture
+    // retries): if GLTF_MODEL_LOADED never fires within
+    // MODEL_LOAD_TIMEOUT_MS, warn and run onTimeout instead of hanging
+    // forever with no visible failure signal.
+    const waitForModelLoad = (
+      modelEid: ecs.Eid,
+      onLoaded: () => void,
+      onTimeout: () => void,
+    ) => {
+      let settled = false;
+      const timer = setTimeout(() => {
+        if (settled) return;
+        settled = true;
+        world.events.removeListener(
+          modelEid,
+          ecs.events.GLTF_MODEL_LOADED,
+          onModelLoaded,
+        );
+        console.warn(
+          `card-manager: gave up waiting for model to load on entity ${modelEid}`,
+        );
+        onTimeout();
+      }, MODEL_LOAD_TIMEOUT_MS);
+      const onModelLoaded = () => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timer);
+        world.events.removeListener(
+          modelEid,
+          ecs.events.GLTF_MODEL_LOADED,
+          onModelLoaded,
+        );
+        onLoaded();
+      };
+      world.events.addListener(
+        modelEid,
+        ecs.events.GLTF_MODEL_LOADED,
+        onModelLoaded,
+      );
+    };
 
     // Cold loads compete for bandwidth with the ~4.4MB glTF and the shared
     // background sheet, so a texture fetch can transiently fail/time out.
@@ -612,16 +700,15 @@ ecs.registerComponent({
             applyAndReveal(modelEid);
             return;
           }
-          world.events.addListener(
+          waitForModelLoad(
             modelEid,
-            ecs.events.GLTF_MODEL_LOADED,
-            function onInitialLoad() {
-              world.events.removeListener(
-                modelEid,
-                ecs.events.GLTF_MODEL_LOADED,
-                onInitialLoad,
+            () => applyAndReveal(modelEid),
+            () => {
+              console.warn(
+                `card-manager: giving up on "${name}" for now — model never loaded, will retry on next scan`,
               );
-              applyAndReveal(modelEid);
+              delete instances[name];
+              world.deleteEntity(instance.eid);
             },
           );
           ecs.GltfModel.mutate(world, modelEid, (c) => {
@@ -713,7 +800,8 @@ ecs.registerComponent({
       const player = PLAYER_DATA[visibleCardName];
       if (!player) return;
 
-      const tapUrl = ecs.assets.resolveAsset(modelPathsFor(player).tap);
+      const tapPath = modelPathsFor(player).tap;
+      const tapUrl = ecs.assets.resolveAsset(tapPath);
       if (!tapUrl) {
         console.warn(
           "card-manager: could not resolve tap model asset for",
@@ -725,15 +813,9 @@ ecs.registerComponent({
       // Set before any async work so a rapid second tap is a no-op right away.
       instance.tapped = true;
 
-      world.events.addListener(
+      waitForModelLoad(
         modelEid,
-        ecs.events.GLTF_MODEL_LOADED,
-        function onTapLoad() {
-          world.events.removeListener(
-            modelEid,
-            ecs.events.GLTF_MODEL_LOADED,
-            onTapLoad,
-          );
+        () => {
           // tap_animation is a separate glb with fresh materials — the
           // in_animation textures don't carry over, so reapply them.
           applyTextures(modelEid, nodeTexturesFor(player), (failed) => {
@@ -747,6 +829,12 @@ ecs.registerComponent({
               c.paused = false;
             });
           });
+        },
+        () => {
+          console.warn(
+            `card-manager: tap model never loaded for "${visibleCardName}" — allowing retry`,
+          );
+          instance.tapped = false;
         },
       );
       ecs.GltfModel.mutate(world, modelEid, (c) => {
