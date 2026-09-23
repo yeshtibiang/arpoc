@@ -1675,6 +1675,102 @@
       "videoControls": {
         "positional": false
       }
+    },
+    "69bc9903-a003-4b37-8829-96c95d88623f": {
+      "id": "69bc9903-a003-4b37-8829-96c95d88623f",
+      "name": "PlayerCard",
+      "components": {},
+      "position": [
+        0,
+        0,
+        0
+      ],
+      "rotation": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "scale": [
+        5.000000000000001,
+        5.000000000000001,
+        5.000000000000001
+      ],
+      "geometry": null,
+      "material": null,
+      "imageTarget": {
+        "name": ""
+      },
+      "order": 6.768719824337127,
+      "parentId": "88453035-dc0f-486d-868a-8ff7c2fda864",
+      "disabled": true
+    },
+    "298a637e-8dd7-4db8-a355-8f8ce9ce6b49": {
+      "id": "298a637e-8dd7-4db8-a355-8f8ce9ce6b49",
+      "parentId": "69bc9903-a003-4b37-8829-96c95d88623f",
+      "position": [
+        0,
+        -0.539,
+        -0.12
+      ],
+      "rotation": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "scale": [
+        0.6,
+        0.6,
+        0.6
+      ],
+      "components": {},
+      "gltfModel": {
+        "src": {
+          "type": "asset",
+          "asset": "assets/models/player_without_video/inanimation_without_video.glb"
+        },
+        "animationClip": "Animation",
+        "loop": false,
+        "paused": false
+      },
+      "name": "arTest_Animated.glb",
+      "order": 1.53520406000254
+    },
+    "27367c39-7333-43b2-a224-18b53bd1d5e4": {
+      "id": "27367c39-7333-43b2-a224-18b53bd1d5e4",
+      "parentId": "69bc9903-a003-4b37-8829-96c95d88623f",
+      "position": [
+        0,
+        -0.33,
+        0.06
+      ],
+      "rotation": [
+        -0.16504760586067782,
+        0,
+        0,
+        0.9862856015372322
+      ],
+      "scale": [
+        0.6000000000000001,
+        0.6000000000000001,
+        0.6000000000000001
+      ],
+      "geometry": {
+        "type": "plane",
+        "width": 1,
+        "height": 1
+      },
+      "material": {
+        "type": "basic",
+        "color": "#ffffff"
+      },
+      "components": {},
+      "name": "VideoReader",
+      "order": 2.8898381579307593,
+      "videoControls": {
+        "positional": false
+      }
     }
   },
   "spaces": {

@@ -74,10 +74,7 @@ ecs.registerComponent({
     const PLAYER_SHEET_NODES = [
       "number",
       "bio",
-      "bio_frame",
-      "info_frame",
       "stats",
-      "stats_frame",
       "info",
       "position",
       "firstName",
@@ -104,12 +101,52 @@ ecs.registerComponent({
       },
     } as const;
 
-    // TODO: player_without_video models don't render correctly yet — always
-    // use the with-video pair for every card until that's fixed. Revert to
-    // `player.video ? MODEL_PATHS.withVideo : MODEL_PATHS.withoutVideo` once
-    // player_without_video is working.
-    const modelPathsFor = (_player: { video?: string }) =>
-      MODEL_PATHS.withVideo;
+    const modelPathsFor = (player: { video?: string }) =>
+      player.video ? MODEL_PATHS.withVideo : MODEL_PATHS.withoutVideo;
+
+    // Local transform (relative to the PlayerCard parent) applied to the
+    // model child entity once its glb variant is chosen. The prefab
+    // (src/.expanse.json) bakes a single fixed transform onto that child,
+    // tuned by eye against the with-video geometry — but the two variants'
+    // baked rest+animated local geometry occupies different bounding boxes
+    // (with-video bbox center (0.16, 0.47, -0.03), size (2.71, 1.49, 2.08);
+    // without-video bbox center (0.28, 0.89, -0.23), size (2.62, 1.83, 1.34)),
+    // so reusing the with-video transform for without-video visibly
+    // shifts/misshapes it.
+    //
+    // withVideo below simply restates the prefab's own baked default
+    // explicitly so it no longer depends on that default surviving future
+    // prefab edits. withoutVideo is a first-pass corrective *translation*,
+    // derived analytically as T' = T - R*S*Delta (Delta = the two variants'
+    // local bounding-box center offset, R/S = the prefab's existing
+    // rotation/scale) — NOT yet visually verified in Studio or on-device.
+    // Expect to nudge this by eye once someone can actually look at a
+    // scanned without-video card.
+    const MODEL_TRANSFORMS = {
+      withVideo: {
+        position: { x: 0, y: -0.539, z: -0.12 },
+        quaternion: {
+          x: 0.35836794954530027,
+          y: 0,
+          z: 0,
+          w: 0.9335804264972017,
+        },
+        scale: 0.6,
+      },
+      withoutVideo: {
+        position: { x: -0.072, y: -0.8066, z: -0.1994 },
+        quaternion: {
+          x: 0.35836794954530027,
+          y: 0,
+          z: 0,
+          w: 0.9335804264972017,
+        },
+        scale: 0.6,
+      },
+    } as const;
+
+    const modelTransformFor = (player: { video?: string }) =>
+      player.video ? MODEL_TRANSFORMS.withVideo : MODEL_TRANSFORMS.withoutVideo;
 
     // The textured source glb marks these two materials `alphaMode: "BLEND"`
     // (and background_texture as doubleSided) so their shared texture sheets
@@ -691,6 +728,37 @@ ecs.registerComponent({
           // after a url mutation that poll could transiently resolve to the
           // stale prefab-default object instead of the one we just asked for.
           const paths = modelPathsFor(player);
+
+          // Each model variant's baked geometry needs its own local
+          // transform on this child entity (see MODEL_TRANSFORMS above) —
+          // set it once here, alongside the URL swap below, in the same
+          // one-time-per-instance branch. Not re-applied in
+          // handleModelTap: a tap only mutates this same entity's
+          // gltfModel.url to the matching variant's `.tap` model and never
+          // touches position/quaternion/scale, so whatever is set here for
+          // `.initial` stays correct through the tap swap (same variant =>
+          // same transform).
+          const transform = modelTransformFor(player);
+          world.setPosition(
+            modelEid,
+            transform.position.x,
+            transform.position.y,
+            transform.position.z,
+          );
+          world.setQuaternion(
+            modelEid,
+            transform.quaternion.x,
+            transform.quaternion.y,
+            transform.quaternion.z,
+            transform.quaternion.w,
+          );
+          world.setScale(
+            modelEid,
+            transform.scale,
+            transform.scale,
+            transform.scale,
+          );
+
           const initialUrl = ecs.assets.resolveAsset(paths.initial);
           if (!initialUrl) {
             console.warn(
