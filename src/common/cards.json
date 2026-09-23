@@ -2,305 +2,372 @@
   "001": {
     "playerName": "Andre Esterhuizen",
     "texture": "assets/textures/AndreEsterhuizen_texture.png",
+    "image": "assets/playersImages/01_Andre Esterhuizen_var02.png",
     "video": "assets/videos/men/AndreEsterhuizen_video.mp4"
   },
   "002": {
     "playerName": "Aphelele Fassi",
-    "texture": "assets/textures/ApheleleFassi_texture.png"
+    "texture": "assets/textures/ApheleleFassi_texture.png",
+    "image": "assets/playersImages/02_Aphelele Fassi_var01.png"
   },
   "003": {
     "playerName": "Aphiwe Ngwevu",
     "texture": "assets/textures/AphiweNgwevu_texture.png",
+    "image": "assets/playersImages/03-aphiwe-ngwevu-Var02_v6.png",
     "video": "assets/videos/women/AphiweNgwevu_video.mp4"
   },
   "004": {
     "playerName": "Asenathi Ntlabakanye",
     "texture": "assets/textures/AsenathiNtlabakanye_texture.png",
+    "image": "assets/playersImages/04_Asenathi Ntlabakanye_var02.png",
     "video": "assets/videos/men/AsenathiNtlabakanye_video.mp4"
   },
   "005": {
     "playerName": "Aseza Hele",
     "texture": "assets/textures/AsezaHele_texture.png",
+    "image": "assets/playersImages/05_Aseza Hele-Var01_v3.png",
     "video": "assets/videos/women/AsezaHele_video.mp4"
   },
   "006": {
     "playerName": "Ayanda Malinga",
     "texture": "assets/textures/AyandaMalinga_texture.png",
+    "image": "assets/playersImages/06-ayanda-malinga_v2.png",
     "video": "assets/videos/women/AyandaMalinga_video.mp4"
   },
   "007": {
     "playerName": "Babalwa Latsha",
     "texture": "assets/textures/BabalwaLatsha_texture.png",
+    "image": "assets/playersImages/07-babalwa-latsha-Var01_v4.png",
     "video": "assets/videos/women/BabalwaLatsha_video.mp4"
   },
   "008": {
     "playerName": "Bongi Mbonambi",
     "texture": "assets/textures/BongiMbonambi_texture.png",
+    "image": "assets/playersImages/08_Bongi Mbonambi_var02.png",
     "video": "assets/videos/men/BongiMbonambi_video.mp4"
   },
   "009": {
     "playerName": "Byrhandre Dolf",
     "texture": "assets/textures/ByrhandreDolf_texture.png",
+    "image": "assets/playersImages/09-byrhandre-dolf-Var01_v2.png",
     "video": "assets/videos/women/ByrhandreDolf_video.mp4"
   },
   "010": {
     "playerName": "Canan Moodie",
     "texture": "assets/textures/CananMoodie_texture.png",
+    "image": "assets/playersImages/10_Canan Moodie_var02.png",
     "video": "assets/videos/men/CananMoodie_video.mp4"
   },
   "011": {
     "playerName": "Catha Jacobs",
     "texture": "assets/textures/CathaJacobs_texture.png",
+    "image": "assets/playersImages/11-catha-jacobs_v3.png",
     "video": "assets/videos/women/CathaJacobs_video.mp4"
   },
   "012": {
     "playerName": "Cheslin Kolbe",
     "texture": "assets/textures/CheslinKolbe_texture.png",
+    "image": "assets/playersImages/12_Cheslin Kolbe_var01.png",
     "video": "assets/videos/men/CheslinKolbe_video.mp4"
   },
   "013": {
     "playerName": "Cobus Reinach",
-    "texture": "assets/textures/CobusReinach_texture.png"
+    "texture": "assets/textures/CobusReinach_texture.png",
+    "image": "assets/playersImages/13_Cobus Reinach_var01.png"
   },
   "014": {
     "playerName": "Damian De Allende",
     "texture": "assets/textures/DamiandeAllende_texture.png",
+    "image": "assets/playersImages/14_Damian de Allende_var01.png",
     "video": "assets/videos/men/DamianDeAllende_video.mp4"
   },
   "015": {
     "playerName": "Damian Willemse",
-    "texture": "assets/textures/DamianWillemse_texture.png"
+    "texture": "assets/textures/DamianWillemse_texture.png",
+    "image": "assets/playersImages/15_Damian Willemse_var02.png"
   },
   "016": {
     "playerName": "Danelle Lochner",
     "texture": "assets/textures/DanelleLochner_texture.png",
+    "image": "assets/playersImages/16-danelle-lochner-Var01_v3.png",
     "video": "assets/videos/women/DanelleLochner_video.mp4"
   },
   "017": {
     "playerName": "Eben Etzebeth",
     "texture": "assets/textures/EbenEtzebeth_texture.png",
+    "image": "assets/playersImages/17_Eben Etzebeth_var01.png",
     "video": "assets/videos/men/EbenEtzebeth_video.mp4"
   },
   "018": {
     "playerName": "Eloise Webb",
-    "texture": "assets/textures/EloiseWebb_texture.png"
+    "texture": "assets/textures/EloiseWebb_texture.png",
+    "image": "assets/playersImages/18-eloise-webb_v4.png"
   },
   "019": {
     "playerName": "Ethan Hooker",
-    "texture": "assets/textures/EthanHooker_texture.png"
+    "texture": "assets/textures/EthanHooker_texture.png",
+    "image": "assets/playersImages/19_Ethan Hooker_var02.png"
   },
   "020": {
     "playerName": "Franco Mostert",
-    "texture": "assets/textures/FrancoMostert_texture.png"
+    "texture": "assets/textures/FrancoMostert_texture.png",
+    "image": "assets/playersImages/20_Franco Mostert_var02.png"
   },
   "021": {
     "playerName": "Gerhard Steenekamp",
-    "texture": "assets/textures/GerhardSteenekamp_texture.png"
+    "texture": "assets/textures/GerhardSteenekamp_texture.png",
+    "image": "assets/playersImages/21_Gerhard Steenekamp_var01.png"
   },
   "022": {
     "playerName": "Grant Williams",
     "texture": "assets/textures/GrantWilliams_texture.png",
+    "image": "assets/playersImages/22_Grant Williams_var01.png",
     "video": "assets/videos/men/GrantWilliams_video.mp4"
   },
   "023": {
     "playerName": "Handre Pollard",
-    "texture": "assets/textures/HandrePollard_texture.png"
+    "texture": "assets/textures/HandrePollard_texture.png",
+    "image": "assets/playersImages/23_Handre Pollard_var01.png"
   },
   "024": {
     "playerName": "Jakkie Cilliers",
     "texture": "assets/textures/JakkieCilliers_texture.png",
+    "image": "assets/playersImages/24-jakkie-cilliers_v2.png",
     "video": "assets/videos/women/JakkieCilliers_video.mp4"
   },
   "025": {
     "playerName": "Jan-Hendrik Wessels",
     "texture": "assets/textures/JanHendrikWessels_texture.png",
+    "image": "assets/playersImages/25_Jan-Hendrik Wessels_var01.png",
     "video": "assets/videos/men/Jan-HendrikWessels_video.mp4"
   },
   "026": {
     "playerName": "Jasper Wiese",
-    "texture": "assets/textures/JasperWiese_texture.png"
+    "texture": "assets/textures/JasperWiese_texture.png",
+    "image": "assets/playersImages/26_Jasper Wiese_var06.png"
   },
   "027": {
     "playerName": "Jesse Kriel",
     "texture": "assets/textures/JesseKriel_texture.png",
+    "image": "assets/playersImages/27_Jesse Kriel_var02.png",
     "video": "assets/videos/men/JesseKriel_video.mp4"
   },
   "028": {
     "playerName": "Kurt-Lee Arendse",
-    "texture": "assets/textures/KurtLeeArendse_texture.png"
+    "texture": "assets/textures/KurtLeeArendse_texture.png",
+    "image": "assets/playersImages/28_Kurt-Lee Arendse_var18.png"
   },
   "029": {
     "playerName": "Kwagga Smith",
     "texture": "assets/textures/KwaggaSmith_texture.png",
+    "image": "assets/playersImages/29_Kwagga Smith_var01.png",
     "video": "assets/videos/men/KwaggaSmith_video.mp4"
   },
   "030": {
     "playerName": "Libbie Janse Van Rensburg",
     "texture": "assets/textures/LibbieJansevanRensburg_texture.png",
+    "image": "assets/playersImages/30-libbie-janse-van-rensburg-Var01_v3.png",
     "video": "assets/videos/women/LibbieJanseVanRensburg_video.mp4"
   },
   "031": {
     "playerName": "Lindelwa Gwala",
     "texture": "assets/textures/LindelwaGwala_texture.png",
+    "image": "assets/playersImages/31-lindelwa-gwala-Var01_v3.png",
     "video": "assets/videos/women/LindelwaGwala_video.mp4"
   },
   "032": {
     "playerName": "Lood De Jager",
     "texture": "assets/textures/LooddeJager_texture.png",
+    "image": "assets/playersImages/32_Lood de Jager_var12.png",
     "video": "assets/videos/men/LoodDeJager_video.mp4"
   },
   "033": {
     "playerName": "Maceala Samboya",
     "texture": "assets/textures/MacealaSamboya_texture.png",
+    "image": "assets/playersImages/33_Maceala Samboya_v2.png",
     "video": "assets/videos/women/MacealaSamboya_video.mp4"
   },
   "034": {
     "playerName": "Malcolm Marx",
-    "texture": "assets/textures/MalcolmMarx_texture.png"
+    "texture": "assets/textures/MalcolmMarx_texture.png",
+    "image": "assets/playersImages/34_Malcolm Marx_var17.png"
   },
   "035": {
     "playerName": "Manie Libbok",
-    "texture": "assets/textures/ManieLibbok_texture.png"
+    "texture": "assets/textures/ManieLibbok_texture.png",
+    "image": "assets/playersImages/35_Manie Libbok_var01.png"
   },
   "036": {
     "playerName": "Morne Van Den Berg",
     "texture": "assets/textures/MornevandenBerg_texture.png",
+    "image": "assets/playersImages/36_Morne van den Berg_var01.png",
     "video": "assets/videos/men/MorneVanDenBerg_video.mp4"
   },
   "037": {
     "playerName": "Nadine Roos",
     "texture": "assets/textures/NadineRoos_texture.png",
+    "image": "assets/playersImages/37-nadine-roos-Var01_v2.png",
     "video": "assets/videos/women/NadineRoos_video.mp4"
   },
   "038": {
     "playerName": "Ox Nche",
     "texture": "assets/textures/OxNche_texture.png",
+    "image": "assets/playersImages/38_Ox Nche_var02.png",
     "video": "assets/videos/men/OxNche_video.mp4"
   },
   "039": {
     "playerName": "Pieter-Steph Du Toit",
     "texture": "assets/textures/PieterStephduToit_texture.png",
+    "image": "assets/playersImages/39_Pieter-Steph du Toit_var01.png",
     "video": "assets/videos/men/Pieter-StephDuToit_video.mp4"
   },
   "040": {
     "playerName": "RG Snyman",
-    "texture": "assets/textures/RGSnyman_texture.png"
+    "texture": "assets/textures/RGSnyman_texture.png",
+    "image": "assets/playersImages/40_RG Snyman_var01.png"
   },
   "041": {
     "playerName": "Ruan Nortje",
     "texture": "assets/textures/RuanNortje_texture.png",
+    "image": "assets/playersImages/41_Ruan Nortje_var01.png",
     "video": "assets/videos/men/RuanNortje_video.mp4"
   },
   "042": {
     "playerName": "Sacha Feinberg-Mngomezulu",
     "texture": "assets/textures/SachaFeinbergMngomezulu_texture.png",
+    "image": "assets/playersImages/42_Sacha Feinberg-Mngomezulu_var01.png",
     "video": "assets/videos/men/SachaFeinberg-Mngomezulu_video.mp4"
   },
   "043": {
     "playerName": "Sanelisiwe Charlie",
     "texture": "assets/textures/SanelisiweCharlie_texture.png",
+    "image": "assets/playersImages/43-sanelisiwe-charlie-Var01_v2.png",
     "video": "assets/videos/women/SanelisiweCharlie_video.mp4"
   },
   "044": {
     "playerName": "Sinazo Mcatshulwa",
     "texture": "assets/textures/SinazoMcatshulwa_texture.png",
+    "image": "assets/playersImages/44-sinazo-mcatshulwa-Var01_v2.png",
     "video": "assets/videos/women/SinazoMcatshulwa_video.mp4"
   },
   "045": {
     "playerName": "Siya Kolisi",
     "texture": "assets/textures/SiyaKolisi_texture.png",
+    "image": "assets/playersImages/45_Siya Kolisi_var03.png",
     "video": "assets/videos/siya_kolisi.mp4"
   },
   "046": {
     "playerName": "Sizophila Solontsi",
     "texture": "assets/textures/SizophilaSolontsi_texture.png",
+    "image": "assets/playersImages/46-sizophila-solontsi-Var01_v2.png",
     "video": "assets/videos/women/SizophilaSolontsi_video.mp4"
   },
   "047": {
     "playerName": "Tayla Kinsey",
     "texture": "assets/textures/TaylaKinsey_texture.png",
+    "image": "assets/playersImages/47-tayla-kinsey_v2.png",
     "video": "assets/videos/women/TaylaKinsey_video.mp4"
   },
   "048": {
     "playerName": "Thomas Du Toit",
     "texture": "assets/textures/ThomasduToit_texture.png",
+    "image": "assets/playersImages/48_Thomas du Toit_var01.png",
     "video": "assets/videos/men/ThomasDuToit_video.mp4"
   },
   "049": {
     "playerName": "Wilco Louw",
     "texture": "assets/textures/WilcoLouw_texture.png",
+    "image": "assets/playersImages/49_Wilco Louw_var02.png",
     "video": "assets/videos/men/WilcoLouw_video.mp4"
   },
   "050": {
     "playerName": "Zintle Mpupha",
-    "texture": "assets/textures/ZintleMpupha_texture.png"
+    "texture": "assets/textures/ZintleMpupha_texture.png",
+    "image": "assets/playersImages/50_Zintle Mpupha_v4.png"
   },
   "051": {
     "playerName": "Schalk Burger",
-    "texture": "assets/textures/SchalkBurger_texture.png"
+    "texture": "assets/textures/SchalkBurger_texture.png",
+    "image": "assets/playersImages/51_Schalk Burger.png"
   },
   "052": {
     "playerName": "Victor Matfield",
-    "texture": "assets/textures/VictorMatfield_texture.png"
+    "texture": "assets/textures/VictorMatfield_texture.png",
+    "image": "assets/playersImages/52_Victor Matfield.png"
   },
   "053": {
     "playerName": "John Smit",
-    "texture": "assets/textures/JohnSmit_texture.png"
+    "texture": "assets/textures/JohnSmit_texture.png",
+    "image": "assets/playersImages/53_John Smit.png"
   },
   "054": {
     "playerName": "Francois Steyn",
-    "texture": "assets/textures/FrancoisSteyn_texture.png"
+    "texture": "assets/textures/FrancoisSteyn_texture.png",
+    "image": "assets/playersImages/54_Francois Steyn.png"
   },
   "055": {
     "playerName": "Jean De Villiers",
-    "texture": "assets/textures/JeandeVilliers_texture.png"
+    "texture": "assets/textures/JeandeVilliers_texture.png",
+    "image": "assets/playersImages/55_Jean de Villiers.png"
   },
   "056": {
     "playerName": "Duane Vermeulen",
-    "texture": "assets/textures/DuaneVermeulen_texture.png"
+    "texture": "assets/textures/DuaneVermeulen_texture.png",
+    "image": "assets/playersImages/56_Duane Vermeulen.png"
   },
   "057": {
     "playerName": "Fourie Du Preez",
-    "texture": "assets/textures/FourieduPreez_texture.png"
+    "texture": "assets/textures/FourieduPreez_texture.png",
+    "image": "assets/playersImages/57_Fourie Du Preez.png"
   },
   "058": {
     "playerName": "Tendai \"Beast\" Mtawarira",
-    "texture": "assets/textures/TendaiMtawarira_texture.png"
+    "texture": "assets/textures/TendaiMtawarira_texture.png",
+    "image": "assets/playersImages/58_Tendai Mtawarira.png"
   },
   "059": {
     "playerName": "Bryan Habana",
-    "texture": "assets/textures/BryanHabana_texture.png"
+    "texture": "assets/textures/BryanHabana_texture.png",
+    "image": "assets/playersImages/59_Bryan Habana_var02.png"
   },
   "060": {
     "playerName": "Patrick Lambie",
-    "texture": "assets/textures/PatrickLambie_texture.png"
+    "texture": "assets/textures/PatrickLambie_texture.png",
+    "image": "assets/playersImages/60_Patrick Lambie.png"
   },
   "061": {
     "playerName": "Percy Montgomery",
-    "texture": "assets/textures/PercyMontgomery_texture.png"
+    "texture": "assets/textures/PercyMontgomery_texture.png",
+    "image": "assets/playersImages/61_Percy Montgomery.png"
   },
   "062": {
     "playerName": "Joel Stransky",
-    "texture": "assets/textures/JoelStransky_texture.png"
+    "texture": "assets/textures/JoelStransky_texture.png",
+    "image": "assets/playersImages/62_Joel Stransky.png"
   },
   "063": {
     "playerName": "Willie Le Roux",
-    "texture": "assets/textures/WillieleRoux_texture.png"
+    "texture": "assets/textures/WillieleRoux_texture.png",
+    "image": "assets/playersImages/63_Willie le Roux.png"
   },
   "064": {
     "playerName": "Morne Steyn",
-    "texture": "assets/textures/MorneSteyn_texture.png"
+    "texture": "assets/textures/MorneSteyn_texture.png",
+    "image": "assets/playersImages/64_Morne Steyn.png"
   },
   "065": {
     "playerName": "Siya Kolisi GOLD",
-    "texture": "assets/textures/SiyaKolisi_texture.png"
+    "texture": "assets/textures/SiyaKolisi_texture.png",
+    "image": "assets/playersImages/45_Siya Kolisi_var03.png"
   },
   "066": {
     "playerName": "Siya Kolisi SILVER",
-    "texture": "assets/textures/SiyaKolisi_texture.png"
+    "texture": "assets/textures/SiyaKolisi_texture.png",
+    "image": "assets/playersImages/45_Siya Kolisi_var03.png"
   },
   "067": {
     "playerName": "Eben Etzebeth SILVER",
-    "texture": "assets/textures/EbenEtzebeth_texture.png"
+    "texture": "assets/textures/EbenEtzebeth_texture.png",
+    "image": "assets/playersImages/17_Eben Etzebeth_var01.png"
   }
 }

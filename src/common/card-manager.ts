@@ -50,7 +50,7 @@ ecs.registerComponent({
 
     const PLAYER_DATA: Record<
       string,
-      { playerName: string; texture: string; video?: string }
+      { playerName: string; texture: string; image?: string; video?: string }
     > = cards;
 
     // Applied to the 'bgTexture' material on every card, regardless of player
@@ -66,10 +66,6 @@ ecs.registerComponent({
       "stripes",
       "sparksTop",
       "sparksBottom",
-      // player_without_video variant's background-sheet nodes
-      "sparksBackLeft",
-      "sparksBackRight",
-      "sparksFront",
     ];
     const PLAYER_SHEET_NODES = [
       "number",
@@ -79,9 +75,12 @@ ecs.registerComponent({
       "position",
       "firstName",
       "surname",
-      // player_without_video variant's static-image node (replaces the video plane)
-      "playerImage",
     ];
+
+    // player_without_video variant's own nodes — left with their baked-in
+    // default look on purpose, no dynamic texture is applied to them:
+    // standBack, standFoot, sparksBackLeft, sparksBackRight, sparksFront.
+    const PLAYER_IMAGE_NODE = ["playerImage"];
 
     // Per-card model selection: cards with a video use the player_with_video
     // pair, cards without one use player_without_video. Each pair has an
@@ -136,10 +135,10 @@ ecs.registerComponent({
       withoutVideo: {
         position: { x: -0.072, y: -0.8066, z: -0.1994 },
         quaternion: {
-          x: 0.35836794954530027,
+          x: 0,
           y: 0,
           z: 0,
-          w: 0.9335804264972017,
+          w: 0,
         },
         scale: 0.6,
       },
@@ -157,24 +156,49 @@ ecs.registerComponent({
     // transparent.
     const nodeTexturesFor = (player: {
       texture: string;
+      image?: string;
+      video?: string;
     }): Array<{
       nodeNames: string[];
       texturePath: string;
       transparent: boolean;
       doubleSided?: boolean;
-    }> => [
-      {
-        nodeNames: BACKGROUND_SHEET_NODES,
-        texturePath: BACKGROUND_TEXTURE,
-        transparent: true,
-        doubleSided: true,
-      },
-      {
-        nodeNames: PLAYER_SHEET_NODES,
-        texturePath: player.texture,
-        transparent: true,
-      },
-    ];
+      fitContain?: boolean;
+    }> => {
+      const groups: Array<{
+        nodeNames: string[];
+        texturePath: string;
+        transparent: boolean;
+        doubleSided?: boolean;
+        fitContain?: boolean;
+      }> = [
+        {
+          nodeNames: BACKGROUND_SHEET_NODES,
+          texturePath: BACKGROUND_TEXTURE,
+          transparent: true,
+          doubleSided: true,
+        },
+        {
+          nodeNames: PLAYER_SHEET_NODES,
+          texturePath: player.texture,
+          transparent: true,
+        },
+      ];
+
+      // playerImage only exists on the player_without_video model, and only
+      // needs texturing when that variant is actually in play (no video to
+      // show instead).
+      if (!player.video && player.image) {
+        groups.push({
+          nodeNames: PLAYER_IMAGE_NODE,
+          texturePath: player.image,
+          transparent: true,
+          fitContain: true,
+        });
+      }
+
+      return groups;
+    };
 
     // Preload images/videos, keyed by asset path so the shared background
     // texture is only ever fetched once regardless of which card is selected
@@ -196,6 +220,7 @@ ecs.registerComponent({
     const player = PLAYER_DATA[effectiveCardId];
     if (player) {
       preloadImage(player.texture);
+      if (player.image) preloadImage(player.image);
 
       if (player.video) {
         const vid = document.createElement("video");
@@ -256,6 +281,65 @@ ecs.registerComponent({
       tex.offset.set(0, -1);
       tex.needsUpdate = true;
       sharedTextures[texturePath] = tex;
+      return tex;
+    };
+
+    const containTextureCache: Record<string, any> = {};
+
+    // Builds a texture that fits `img` inside `mesh`'s own local aspect
+    // ratio without distorting it (like CSS `object-fit: contain`), leaving
+    // the leftover canvas area transparent instead of stretching the photo
+    // to fill the mesh's full UV rectangle. Cached per texturePath+aspect so
+    // repeated reveals (found/lost flicker) don't re-composite the canvas
+    // every time.
+    const getOrCreateContainTexture = (
+      img: HTMLImageElement,
+      texturePath: string,
+      mesh: any,
+    ) => {
+      mesh.geometry.computeBoundingBox();
+      const bbox = mesh.geometry.boundingBox;
+      const meshWidth = (bbox.max.x - bbox.min.x) * mesh.scale.x;
+      const meshHeight = (bbox.max.y - bbox.min.y) * mesh.scale.y;
+      const meshAspect = meshWidth / meshHeight;
+
+      const cacheKey = `${texturePath}::${meshAspect.toFixed(4)}`;
+      const cached = containTextureCache[cacheKey];
+      if (cached) return cached;
+
+      const imgAspect = img.naturalWidth / img.naturalHeight;
+      let canvasWidth: number;
+      let canvasHeight: number;
+      if (imgAspect > meshAspect) {
+        canvasWidth = img.naturalWidth;
+        canvasHeight = Math.round(img.naturalWidth / meshAspect);
+      } else {
+        canvasHeight = img.naturalHeight;
+        canvasWidth = Math.round(img.naturalHeight * meshAspect);
+      }
+
+      const canvas = document.createElement("canvas");
+      canvas.width = canvasWidth;
+      canvas.height = canvasHeight;
+      const ctx = canvas.getContext("2d") as CanvasRenderingContext2D;
+      ctx.drawImage(
+        img,
+        (canvasWidth - img.naturalWidth) / 2,
+        (canvasHeight - img.naturalHeight) / 2,
+      );
+
+      const THREE = (window as any).THREE;
+      const tex = new THREE.CanvasTexture(canvas);
+      // Same V-flip correction as getOrCreateTexture above (this model's
+      // UVs need it regardless of which texture supplies the pixels) —
+      // applied on top of the already-composited contain+transparent
+      // canvas, so it flips the whole result consistently with every other
+      // node on this model.
+      tex.wrapS = THREE.MirroredRepeatWrapping;
+      tex.wrapT = THREE.MirroredRepeatWrapping;
+      tex.offset.set(0, -1);
+      tex.needsUpdate = true;
+      containTextureCache[cacheKey] = tex;
       return tex;
     };
 
@@ -384,6 +468,7 @@ ecs.registerComponent({
         texturePath: string;
         transparent: boolean;
         doubleSided?: boolean;
+        fitContain?: boolean;
       }>,
       onReady: (failed: boolean) => void,
     ) => {
@@ -404,12 +489,17 @@ ecs.registerComponent({
           };
 
           nodeTextureGroups.forEach(
-            ({ nodeNames, texturePath, transparent, doubleSided }) => {
+            ({
+              nodeNames,
+              texturePath,
+              transparent,
+              doubleSided,
+              fitContain,
+            }) => {
               const applyToMatchingMeshes = (
                 img: HTMLImageElement,
                 attemptsLeft: number = MESH_MATCH_MAX_RETRIES,
               ) => {
-                const tex = getOrCreateTexture(img, texturePath);
                 const THREE = (window as any).THREE;
 
                 // Only touch meshes whose node name is in this group (e.g. the
@@ -419,6 +509,9 @@ ecs.registerComponent({
                 modelObject.traverse((child: any) => {
                   if (!child.isMesh || !nodeNames.includes(child.name)) return;
                   matchedCount += 1;
+                  const tex = fitContain
+                    ? getOrCreateContainTexture(img, texturePath, child)
+                    : getOrCreateTexture(img, texturePath);
                   const materials = Array.isArray(child.material)
                     ? child.material
                     : [child.material];
