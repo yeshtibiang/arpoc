@@ -1641,41 +1641,6 @@
       "order": 3.2646695142192947,
       "disabled": true
     },
-    "b6409855-f0ea-412e-825d-4757c1eacf35": {
-      "id": "b6409855-f0ea-412e-825d-4757c1eacf35",
-      "position": [
-        0,
-        -0.33,
-        0.06
-      ],
-      "rotation": [
-        -0.16504760586067782,
-        0,
-        0,
-        0.9862856015372322
-      ],
-      "scale": [
-        0.6000000000000001,
-        0.6000000000000001,
-        0.6000000000000001
-      ],
-      "geometry": {
-        "type": "plane",
-        "width": 1,
-        "height": 1
-      },
-      "material": {
-        "type": "basic",
-        "color": "#ffffff"
-      },
-      "parentId": "9375fb8e-d489-4bbf-b7b0-5b2ddc397853",
-      "components": {},
-      "name": "VideoReader",
-      "order": 2.8898381579307593,
-      "videoControls": {
-        "positional": false
-      }
-    },
     "69bc9903-a003-4b37-8829-96c95d88623f": {
       "id": "69bc9903-a003-4b37-8829-96c95d88623f",
       "name": "PlayerCard",

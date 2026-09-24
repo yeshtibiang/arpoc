@@ -82,6 +82,13 @@ ecs.registerComponent({
     // standBack, standFoot, sparksBackLeft, sparksBackRight, sparksFront.
     const PLAYER_IMAGE_NODE = ["playerImage"];
 
+    // player_with_video variant's own node: a quad baked directly into the
+    // glb (and already animated, in lockstep with the rest of the model's
+    // "Animation" clip, growing from scale 0 into place) that the video
+    // texture is painted onto — replaces a separate video-plane prefab
+    // child. Only present in the with-video model pair.
+    const VIDEO_MESH_NAME = "bragAI";
+
     // Per-card model selection: cards with a video use the player_with_video
     // pair, cards without one use player_without_video. Each pair has an
     // in_animation model (shown by default) and a tap_animation model
@@ -258,9 +265,6 @@ ecs.registerComponent({
     type CardInstance = {
       eid: ecs.Eid;
       modelEid: ecs.Eid | null;
-      videoEid: ecs.Eid | null;
-      animationFinished: boolean;
-      videoAttached: boolean;
       // Sticky for the instance's lifetime: once a tap has swapped in the
       // tap_animation model, further taps (and found/lost flicker re-reveals)
       // must not re-trigger or revert it. See handleModelTap.
@@ -599,15 +603,20 @@ ecs.registerComponent({
       );
     };
 
+    // Paints the card's video onto the model's own `bragAI` mesh (found by
+    // name in the loaded glb's hierarchy) instead of a separate video-plane
+    // entity. Mirrors applyTextures' applyToMatchingMeshes below: the mesh
+    // hierarchy can populate a moment after the model object itself is
+    // registered, so retry the name match a few times before giving up.
     const applyVideo = (
-      planeEid: ecs.Eid,
+      modelEid: ecs.Eid,
       videoPath: string,
       cardName: string,
-      onReady: () => void,
+      onReady: (failed: boolean) => void,
     ) => {
-      const planeObject = world.three.entityToObject.get(planeEid);
-      if (!planeObject) {
-        onReady();
+      const modelObject = world.three.entityToObject.get(modelEid);
+      if (!modelObject) {
+        onReady(true);
         return;
       }
 
@@ -623,64 +632,66 @@ ecs.registerComponent({
           return v;
         })();
 
-      const attachVideo = () => {
+      const attachVideo = (attemptsLeft: number = MESH_MATCH_MAX_RETRIES) => {
         const THREE = (window as any).THREE;
         const videoTexture = new THREE.VideoTexture(videoEl);
+        // Same V-flip correction as getOrCreateTexture above — bragAI comes
+        // from the same Blender->glTF export as the other nodes on this
+        // model, so its baked UVs likely need the same treatment.
+        videoTexture.wrapS = THREE.MirroredRepeatWrapping;
+        videoTexture.wrapT = THREE.MirroredRepeatWrapping;
+        videoTexture.offset.set(0, -1);
         videoTexture.needsUpdate = true;
 
-        planeObject.traverse((child: any) => {
-          if (child.isMesh) {
-            child.material.map = videoTexture;
-            child.material.needsUpdate = true;
-          }
+        let matched = false;
+        modelObject.traverse((child: any) => {
+          if (!child.isMesh || child.name !== VIDEO_MESH_NAME) return;
+          matched = true;
+          // Replace outright rather than mutating the existing material's
+          // .map: GLTFLoader gives bragAI a lit MeshStandardMaterial (the
+          // glb has no KHR_materials_unlit extension), which would shade/tint
+          // the video under the scene's lights/envmap instead of showing it
+          // unshaded like the video plane it replaces did.
+          child.material = new THREE.MeshBasicMaterial({ map: videoTexture });
         });
 
-        onReady();
+        if (!matched) {
+          if (attemptsLeft > 0) {
+            setTimeout(
+              () => attachVideo(attemptsLeft - 1),
+              MESH_MATCH_RETRY_DELAY_MS,
+            );
+            return;
+          }
+          console.warn(
+            `card-manager: no mesh named "${VIDEO_MESH_NAME}" found for video`,
+            "— model hierarchy:",
+            modelObject,
+          );
+          onReady(true);
+          return;
+        }
+
+        onReady(false);
       };
 
       videoEl.play().catch((err: any) => {
         console.warn("Video play error:", err);
-        onReady(); // don't hang on error
+        onReady(true); // don't hang on error
       });
 
       if (videoEl.readyState >= 3) {
         attachVideo();
       } else {
-        videoEl.addEventListener("playing", attachVideo, { once: true });
+        videoEl.addEventListener("playing", () => attachVideo(), {
+          once: true,
+        });
       }
-    };
-
-    // Gates when a card's video actually starts: only once the arTest
-    // animation has finished AND the card is still the one currently shown
-    // AND (for a card that's already played its video before, e.g. re-shown
-    // after a found/lost cycle) just re-reveals the plane instead of
-    // rebuilding the VideoTexture.
-    const tryPlayVideo = (
-      name: string,
-      instance: CardInstance,
-      player: { video?: string },
-    ) => {
-      if (!player.video) return;
-      if (!instance.animationFinished) return;
-      if (visibleCardName !== name) return;
-      if (!instance.videoEid) return;
-
-      if (instance.videoAttached) {
-        setEidVisible(instance.videoEid, true);
-        return;
-      }
-
-      instance.videoAttached = true;
-      const videoEid = instance.videoEid;
-      applyVideo(videoEid, player.video, name, () => {
-        setEidVisible(videoEid, true);
-      });
     };
 
     // Hides/shows a single entity (and its own Three.js subtree) without
     // touching any of its ECS siblings/children beyond what Three.js's own
-    // traverse reaches — used to toggle the VideoReader plane independently
-    // of the rest of the PlayerCard instance.
+    // traverse reaches.
     const setEidVisible = (eid: ecs.Eid, visible: boolean) => {
       if (visible) {
         ecs.Hidden.remove(world, eid);
@@ -735,13 +746,22 @@ ecs.registerComponent({
       player: any,
     ) => {
       const applyAndReveal = (modelEid: ecs.Eid) => {
-        applyTextures(modelEid, nodeTexturesFor(player), (failed) => {
-          if (failed) {
-            // At least one texture never loaded even after retries — don't
-            // reveal the model with its baked-in default look. Drop the
-            // cached instance and its entity so the next scan of this card
-            // starts a fresh load attempt instead of reusing this broken
-            // one.
+        // Wait for both the node textures and (when this card has one) the
+        // video on `bragAI` before revealing — same "never show a
+        // half-applied model" rule applyTextures already follows on its own.
+        let pending = player.video ? 2 : 1;
+        let anyFailed = false;
+        const oneGroupDone = (failed: boolean) => {
+          if (failed) anyFailed = true;
+          pending -= 1;
+          if (pending > 0) return;
+
+          if (anyFailed) {
+            // At least one texture (or the video) never loaded even after
+            // retries — don't reveal the model with its baked-in default
+            // look. Drop the cached instance and its entity so the next scan
+            // of this card starts a fresh load attempt instead of reusing
+            // this broken one.
             console.warn(
               `card-manager: giving up on "${name}" for now — will retry on next scan`,
             );
@@ -761,20 +781,19 @@ ecs.registerComponent({
           // means every reveal plays the same grow-in animation from frame
           // zero and always lands on the correct final scale, regardless of
           // how long texture loading took. Harmless no-op on a re-reveal of
-          // an already-unpaused/finished instance.
+          // an already-unpaused/finished instance. bragAI's own scale-in is
+          // baked into this same clip, so the video needs no separate
+          // show/hide handling — it appears exactly when the model's grow-in
+          // animation reaches it.
           ecs.GltfModel.mutate(world, modelEid, (c) => {
             c.paused = false;
           });
+        };
 
-          // setInstanceVisible above just force-revealed every child,
-          // including the video plane — re-hide it if its video hasn't
-          // actually started yet so it doesn't flash a blank white square
-          // while still waiting on the arTest animation to finish.
-          if (instance.videoEid && !instance.videoAttached) {
-            setEidVisible(instance.videoEid, false);
-          }
-          tryPlayVideo(name, instance, player);
-        });
+        applyTextures(modelEid, nodeTexturesFor(player), oneGroupDone);
+        if (player.video) {
+          applyVideo(modelEid, player.video, name, oneGroupDone);
+        }
       };
 
       if (instance.modelEid) {
@@ -788,28 +807,11 @@ ecs.registerComponent({
           return children.length > 0 ? children : null;
         },
         (children) => {
-          // PlayerCard's two children, in scene order: the arTest_Animated
-          // model, then the VideoReader plane. Support the model-only case
-          // too in case a variant of the prefab ever omits the video plane.
+          // PlayerCard's only child: the arTest_Animated model (the video,
+          // when this card has one, now lives on that model's own `bragAI`
+          // mesh instead of a separate prefab child — see applyVideo).
           const modelEid = children[0];
-          const videoEid = children.length > 1 ? children[1] : null;
           instance.modelEid = modelEid;
-          instance.videoEid = videoEid;
-
-          if (videoEid) {
-            // Stays hidden until its video is actually ready to play.
-            setEidVisible(videoEid, false);
-
-            world.events.addListener(
-              modelEid,
-              ecs.events.GLTF_ANIMATION_FINISHED,
-              (e: any) => {
-                if (e.data?.name !== "Animation") return;
-                instance.animationFinished = true;
-                tryPlayVideo(name, instance, player);
-              },
-            );
-          }
 
           // Swap in this card's with/without-video in_animation model. This
           // only runs once per instance (this whole pollUntil block is
@@ -887,9 +889,6 @@ ecs.registerComponent({
       const instance: CardInstance = {
         eid: instanceEid,
         modelEid: null,
-        videoEid: null,
-        animationFinished: false,
-        videoAttached: false,
         tapped: false,
       };
       instances[name] = instance;
@@ -960,6 +959,9 @@ ecs.registerComponent({
 
       const player = PLAYER_DATA[visibleCardName];
       if (!player) return;
+      // Captured as a const so it stays narrowed to `string` inside the
+      // nested callbacks below, unlike the mutable `visibleCardName`.
+      const cardName = visibleCardName;
 
       const tapPath = modelPathsFor(player).tap;
       const tapUrl = ecs.assets.resolveAsset(tapPath);
@@ -978,11 +980,13 @@ ecs.registerComponent({
         modelEid,
         () => {
           // tap_animation is a separate glb with fresh materials — the
-          // in_animation textures don't carry over, so reapply them.
+          // in_animation textures don't carry over, so reapply them. Same
+          // goes for the video on bragAI, which tap_animation_with_video.glb
+          // bakes with its own "popped up" resting transform.
           applyTextures(modelEid, nodeTexturesFor(player), (failed) => {
             if (failed) {
               console.warn(
-                `card-manager: failed to retexture tap model for "${visibleCardName}"`,
+                `card-manager: failed to retexture tap model for "${cardName}"`,
               );
             }
             ecs.GltfModel.mutate(world, modelEid, (c) => {
@@ -990,10 +994,19 @@ ecs.registerComponent({
               c.paused = false;
             });
           });
+          if (player.video) {
+            applyVideo(modelEid, player.video, cardName, (failed) => {
+              if (failed) {
+                console.warn(
+                  `card-manager: failed to reattach video for tap model "${cardName}"`,
+                );
+              }
+            });
+          }
         },
         () => {
           console.warn(
-            `card-manager: tap model never loaded for "${visibleCardName}" — allowing retry`,
+            `card-manager: tap model never loaded for "${cardName}" — allowing retry`,
           );
           instance.tapped = false;
         },
