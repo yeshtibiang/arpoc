@@ -77,10 +77,13 @@ ecs.registerComponent({
       "surname",
     ];
 
-    // player_without_video variant's own nodes — left with their baked-in
-    // default look on purpose, no dynamic texture is applied to them:
-    // standBack, standFoot, sparksBackLeft, sparksBackRight, sparksFront.
+    // player_without_video variant's own nodes. standBack/standFoot keep
+    // their baked-in look; the sparks get an unlit material built from the
+    // spark sheet embedded in sparksBackLeft's material (see
+    // applySparkMaterials).
     const PLAYER_IMAGE_NODE = ["playerImage"];
+    const SPARK_NODES = ["sparksBackLeft", "sparksBackRight", "sparksFront"];
+    const SPARK_TEXTURE_SOURCE_NODE = "sparksBackLeft";
 
     // player_with_video variant's own node: a quad baked directly into the
     // glb (and already animated, in lockstep with the rest of the model's
@@ -171,6 +174,7 @@ ecs.registerComponent({
       transparent: boolean;
       doubleSided?: boolean;
       fitContain?: boolean;
+      unlit?: boolean;
     }> => {
       const groups: Array<{
         nodeNames: string[];
@@ -178,6 +182,7 @@ ecs.registerComponent({
         transparent: boolean;
         doubleSided?: boolean;
         fitContain?: boolean;
+        unlit?: boolean;
       }> = [
         {
           nodeNames: BACKGROUND_SHEET_NODES,
@@ -200,7 +205,13 @@ ecs.registerComponent({
           nodeNames: PLAYER_IMAGE_NODE,
           texturePath: player.image,
           transparent: true,
+          doubleSided: true,
           fitContain: true,
+          // The glb gives playerImage a white emissiveFactor with no
+          // emissiveTexture, which three.js adds as flat white on top of
+          // the photo (washing it out). Swap to an unlit material instead —
+          // same full-brightness look the white emission was going for.
+          unlit: true,
         });
       }
 
@@ -301,17 +312,26 @@ ecs.registerComponent({
       texturePath: string,
       mesh: any,
     ) => {
+      // Geometry bbox only — NOT multiplied by mesh.scale. The UV mapping
+      // depends on the geometry alone, and playerImage's node scale is
+      // animated from [0,0,0] (the in_animation clip's grow-in): at the
+      // first reveal the clip is still paused at frame 0, so including the
+      // scale gave 0/0 = NaN -> a 0x0 canvas -> an empty texture that was
+      // then cached under a "NaN" key. That's why the photo was sometimes
+      // missing on first scan and only showed up after a lost/found cycle.
       mesh.geometry.computeBoundingBox();
       const bbox = mesh.geometry.boundingBox;
-      const meshWidth = (bbox.max.x - bbox.min.x) * mesh.scale.x;
-      const meshHeight = (bbox.max.y - bbox.min.y) * mesh.scale.y;
-      const meshAspect = meshWidth / meshHeight;
+      const meshWidth = bbox.max.x - bbox.min.x;
+      const meshHeight = bbox.max.y - bbox.min.y;
+      const imgAspect = img.naturalWidth / img.naturalHeight;
+      const rawAspect = meshWidth / meshHeight;
+      const meshAspect =
+        Number.isFinite(rawAspect) && rawAspect > 0 ? rawAspect : imgAspect;
 
       const cacheKey = `${texturePath}::${meshAspect.toFixed(4)}`;
       const cached = containTextureCache[cacheKey];
       if (cached) return cached;
 
-      const imgAspect = img.naturalWidth / img.naturalHeight;
       let canvasWidth: number;
       let canvasHeight: number;
       if (imgAspect > meshAspect) {
@@ -465,6 +485,75 @@ ecs.registerComponent({
       );
     };
 
+    // The without-video glbs only embed the spark sheet on sparksBackLeft's
+    // material (sparksBackRight/sparksFront export with no texture at all),
+    // and in_animation also gives it a white emissiveFactor with no
+    // emissiveTexture — three.js adds that as flat white, so the spark
+    // rendered as a solid white quad. Reuse that embedded texture on all
+    // three spark meshes through an unlit, alpha-blended material instead.
+    // The glTF texture is used as-is (GLTFLoader already set flipY
+    // correctly), so no offset/MirroredRepeat correction here.
+    let sparkTexture: any = null;
+    const applySparkMaterials = (
+      modelEid: ecs.Eid,
+      attemptsLeft: number = MESH_MATCH_MAX_RETRIES,
+    ) => {
+      pollUntil(
+        () => world.three.entityToObject.get(modelEid),
+        (modelObject) => {
+          const THREE = (window as any).THREE;
+
+          // Prefer the texture of the currently-loaded glb (it changes on the
+          // tap swap), falling back to the one cached from a previous pass
+          // once our own MeshBasicMaterial has replaced the original.
+          modelObject.traverse((child: any) => {
+            if (!child.isMesh || child.name !== SPARK_TEXTURE_SOURCE_NODE) {
+              return;
+            }
+            const mat = Array.isArray(child.material)
+              ? child.material[0]
+              : child.material;
+            if (mat?.map && !mat.userData?.cardManagerSpark) {
+              sparkTexture = mat.map;
+            }
+          });
+
+          let matchedCount = 0;
+          if (sparkTexture) {
+            modelObject.traverse((child: any) => {
+              if (!child.isMesh || !SPARK_NODES.includes(child.name)) return;
+              matchedCount += 1;
+              const mat = new THREE.MeshBasicMaterial({
+                map: sparkTexture,
+                transparent: true,
+                side: THREE.DoubleSide,
+                depthWrite: false,
+              });
+              mat.userData.cardManagerSpark = true;
+              child.material = mat;
+            });
+          }
+
+          if (matchedCount === 0) {
+            // Mesh hierarchy may not be attached yet — same retry rule as
+            // applyTextures' applyToMatchingMeshes.
+            if (attemptsLeft > 0) {
+              setTimeout(
+                () => applySparkMaterials(modelEid, attemptsLeft - 1),
+                MESH_MATCH_RETRY_DELAY_MS,
+              );
+              return;
+            }
+            console.warn(
+              "card-manager: could not apply spark materials",
+              sparkTexture ? "(no spark meshes matched)" : "(no embedded spark texture)",
+            );
+          }
+        },
+        `model object for entity ${modelEid} (sparks)`,
+      );
+    };
+
     const applyTextures = (
       modelEid: ecs.Eid,
       nodeTextureGroups: Array<{
@@ -473,6 +562,7 @@ ecs.registerComponent({
         transparent: boolean;
         doubleSided?: boolean;
         fitContain?: boolean;
+        unlit?: boolean;
       }>,
       onReady: (failed: boolean) => void,
     ) => {
@@ -499,6 +589,7 @@ ecs.registerComponent({
               transparent,
               doubleSided,
               fitContain,
+              unlit,
             }) => {
               const applyToMatchingMeshes = (
                 img: HTMLImageElement,
@@ -516,6 +607,14 @@ ecs.registerComponent({
                   const tex = fitContain
                     ? getOrCreateContainTexture(img, texturePath, child)
                     : getOrCreateTexture(img, texturePath);
+                  if (unlit) {
+                    child.material = new THREE.MeshBasicMaterial({
+                      map: tex,
+                      transparent,
+                      side: doubleSided ? THREE.DoubleSide : THREE.FrontSide,
+                    });
+                    return;
+                  }
                   const materials = Array.isArray(child.material)
                     ? child.material
                     : [child.material];
@@ -793,6 +892,11 @@ ecs.registerComponent({
         applyTextures(modelEid, nodeTexturesFor(player), oneGroupDone);
         if (player.video) {
           applyVideo(modelEid, player.video, name, oneGroupDone);
+        } else {
+          // Not gating the reveal on this: the sparks are scaled to 0 at the
+          // paused clip's first frame, so they're invisible until the grow-in
+          // runs anyway.
+          applySparkMaterials(modelEid);
         }
       };
 
@@ -1002,6 +1106,8 @@ ecs.registerComponent({
                 );
               }
             });
+          } else {
+            applySparkMaterials(modelEid);
           }
         },
         () => {
