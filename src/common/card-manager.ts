@@ -611,6 +611,12 @@ ecs.registerComponent({
                     child.material = new THREE.MeshBasicMaterial({
                       map: tex,
                       transparent,
+                      // Discard (near-)transparent texels so they write no
+                      // depth: otherwise the photo's contain padding and
+                      // cut-out background still occupy the depth buffer
+                      // and clip info/bio when those draw after it in
+                      // three.js's transparent sort.
+                      alphaTest: 0.5,
                       side: doubleSided ? THREE.DoubleSide : THREE.FrontSide,
                     });
                     return;
